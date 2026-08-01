@@ -13,6 +13,13 @@ struct ZonaMapView: View {
     private var disponibles: Int { puestosVC.puestos.filter { $0.estado == .DISPONIBLE }.count }
     private var ocupados:    Int { puestosVC.puestos.filter { $0.estado == .OCUPADO  }.count }
 
+    private func esAcceso(_ msg: String) -> Bool {
+        let low = msg.lowercased()
+        return low.contains("401") || low.contains("403")
+            || low.contains("permiso") || low.contains("autorizado")
+            || low.contains("unauthorized") || low.contains("forbidden")
+    }
+
     var body: some View {
         ZStack {
             // Campus map background
@@ -27,6 +34,12 @@ struct ZonaMapView: View {
             Group {
                 if puestosVC.isLoading {
                     ProgressView().tint(ParkTheme.Color.accentLight)
+                } else if let err = puestosVC.errorMsg, esAcceso(err) {
+                    AccesoDenegadoView(
+                        titulo: "Sin Permiso",
+                        descripcion: err,
+                        accion: nil
+                    )
                 } else if let err = puestosVC.errorMsg {
                     VStack(spacing: 12) {
                         Text(err).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
@@ -76,7 +89,6 @@ struct ZonaMapView: View {
         }
         .navigationTitle(zona.nombre)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
         .sheet(item: $sheetPuesto) { p in
             PuestoSheet(puesto: p, puestosVC: puestosVC, session: session) {
@@ -119,11 +131,16 @@ private struct PuestoSheet: View {
     let session: AuthSession?
     let onActualizado: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var placaGuardia = ""
+
+    private var isGuard: Bool { session?.isGuard == true || session?.isAdmin == true }
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Spacer().frame(height: 4)
-            VStack(spacing: 8) {
+
+            // Header
+            VStack(spacing: 6) {
                 Text("Puesto \(puesto.numeroPuesto)")
                     .font(.title2).fontWeight(.bold)
                     .foregroundStyle(ParkTheme.Color.textPrimary)
@@ -136,22 +153,37 @@ private struct PuestoSheet: View {
             }
 
             if let err = puestosVC.errorMsg {
-                Text(err).font(.caption).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
+                Text(err).font(.caption).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center).padding(.horizontal)
             }
             if let ok = puestosVC.successMsg {
                 Text(ok).font(.caption).foregroundStyle(ParkTheme.Color.disponible)
             }
 
             VStack(spacing: 12) {
-                if puesto.estado == .DISPONIBLE {
-                    PrimaryButton(title: "Ocupar este puesto", isLoading: puestosVC.isActualizando) {
-                        Task { await puestosVC.ocupar(puestoId: puesto.id); onActualizado() }
-                    }
-                } else {
-                    PrimaryButton(title: "Liberar puesto", isLoading: puestosVC.isActualizando) {
-                        Task { await puestosVC.liberar(puestoId: puesto.id); onActualizado() }
-                    }
-                    if session?.isAdmin == true || session?.isGuard == true {
+                if isGuard {
+                    // ── GUARD / ADMIN ACTIONS ─────────────────────────
+                    if puesto.estado == .DISPONIBLE {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Registrar entrada manual")
+                                .font(.caption).fontWeight(.semibold)
+                                .foregroundStyle(ParkTheme.Color.textSecond)
+                            TextField("Placa del vehículo (ej. ABC-1234)", text: $placaGuardia)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .foregroundStyle(ParkTheme.Color.textPrimary)
+                                .padding(12)
+                                .background(ParkTheme.Color.card)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .onChange(of: placaGuardia) { _, new in
+                                    let f = new.uppercased().filter { $0.isLetter || $0.isNumber || $0 == "-" }
+                                    if f != new { placaGuardia = f }
+                                }
+                        }
+                        PrimaryButton(title: "Registrar entrada", isLoading: puestosVC.isActualizando) {
+                            Task { await puestosVC.forzarOcupacion(puestoId: puesto.id, placa: placaGuardia); onActualizado() }
+                        }
+                        .disabled(placaGuardia.trimmingCharacters(in: .whitespaces).count < 3 || puestosVC.isActualizando)
+                    } else {
                         Button {
                             Task { await puestosVC.forzarLiberacion(puestoId: puesto.id); onActualizado() }
                         } label: {
@@ -162,7 +194,19 @@ private struct PuestoSheet: View {
                         .tint(ParkTheme.Color.gold)
                         .disabled(puestosVC.isActualizando)
                     }
+                } else {
+                    // ── DRIVER ACTIONS ────────────────────────────────
+                    if puesto.estado == .DISPONIBLE {
+                        PrimaryButton(title: "Ocupar este puesto", isLoading: puestosVC.isActualizando) {
+                            Task { await puestosVC.ocupar(puestoId: puesto.id); onActualizado() }
+                        }
+                    } else {
+                        PrimaryButton(title: "Liberar puesto", isLoading: puestosVC.isActualizando) {
+                            Task { await puestosVC.liberar(puestoId: puesto.id); onActualizado() }
+                        }
+                    }
                 }
+
                 Button("Cerrar") { dismiss() }
                     .foregroundStyle(ParkTheme.Color.textSecond)
             }

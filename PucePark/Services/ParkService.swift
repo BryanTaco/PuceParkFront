@@ -70,6 +70,12 @@ class ParkService {
         try await perform("\(base)/puestos/\(id)/forzar-liberacion", method: .put)
     }
 
+    func forzarOcupacion(id: Int, placa: String) async throws -> PuestoParqueo {
+        let body: [String: Any] = ["placaVehiculo": placa]
+        return try await perform("\(base)/puestos/\(id)/forzar-ocupacion", method: .put,
+                                 parameters: body, encoding: JSONEncoding.default)
+    }
+
     func getPerfil() async throws -> PerfilUsuario {
         try await perform("\(base)/perfil/me")
     }
@@ -87,6 +93,10 @@ class ParkService {
 
     func getHistorialMe() async throws -> [HistorialParqueo] {
         try await perform("\(base)/historial/me")
+    }
+
+    func getHistorialGuardia() async throws -> [HistorialParqueo] {
+        try await perform("\(base)/historial/guardia/me")
     }
 
     func getEstadisticasMe(year: Int, month: Int) async throws -> EstadisticasPersonales {

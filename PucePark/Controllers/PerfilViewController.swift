@@ -12,7 +12,8 @@ class PerfilViewController: ObservableObject {
     @Published var editNombre     = ""
     @Published var editPlaca      = ""
     @Published var editPermiso    = ""
-    @Published var editModoOscuro = true
+    var isGuard = false
+    var perfilCargado = false
 
     // Placa Ecuador: 3 letras + 4 dígitos (con o sin guion)
     var placaValida: Bool {
@@ -27,12 +28,20 @@ class PerfilViewController: ObservableObject {
         return clean.range(of: #"^\d{5,10}$"#, options: .regularExpression) != nil
     }
 
+    // Cédula de guardia: exactamente 10 dígitos
+    var cedulaValida: Bool {
+        let clean = editPermiso.trimmingCharacters(in: .whitespacesAndNewlines)
+        return clean.range(of: #"^\d{10}$"#, options: .regularExpression) != nil
+    }
+
     var nombreValido: Bool {
         editNombre.trimmingCharacters(in: .whitespacesAndNewlines).count >= 3
     }
 
     var canSave: Bool {
-        nombreValido && placaValida && permisoValido && !isSaving
+        isGuard
+            ? nombreValido && cedulaValida && !isSaving
+            : nombreValido && placaValida && permisoValido && !isSaving
     }
 
     func loadPerfil() async {
@@ -42,7 +51,8 @@ class PerfilViewController: ObservableObject {
             async let e = ParkService.shared.getPerfilEstado()
             let (perfil, estado) = try await (p, e)
             self.perfil = perfil; self.estado = estado; fill(from: perfil)
-        } catch { errorMsg = error.localizedDescription }
+        } catch { /* perfil no existe aún — normal en primer acceso */ }
+        perfilCargado = true
         isLoading = false
     }
 
@@ -52,9 +62,9 @@ class PerfilViewController: ObservableObject {
         do {
             let u = try await ParkService.shared.updatePerfil(
                 nombreCompleto: editNombre.trimmingCharacters(in: .whitespacesAndNewlines),
-                placaVehiculo:  editPlaca.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+                placaVehiculo:  isGuard ? "" : editPlaca.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
                 numeroPermiso:  editPermiso.trimmingCharacters(in: .whitespacesAndNewlines),
-                modoOscuro:     editModoOscuro)
+                modoOscuro:     false)
             perfil = u; estado = try await ParkService.shared.getPerfilEstado()
             successMsg = "Perfil actualizado"
         } catch { errorMsg = "No se pudo guardar el perfil." }
@@ -63,6 +73,6 @@ class PerfilViewController: ObservableObject {
 
     private func fill(from p: PerfilUsuario) {
         editNombre = p.nombreCompleto; editPlaca = p.placaVehiculo
-        editPermiso = p.numeroPermiso; editModoOscuro = p.modoOscuro
+        editPermiso = p.numeroPermiso
     }
 }

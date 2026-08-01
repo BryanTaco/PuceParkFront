@@ -2,16 +2,16 @@ import SwiftUI
 
 enum ParkTheme {
     enum Color {
-        static let background  = SwiftUI.Color(hex: "#0F1624")
-        static let surface     = SwiftUI.Color(hex: "#16213A")
-        static let card        = SwiftUI.Color(hex: "#1A2744")
+        static let background  = SwiftUI.Color(hex: "#0B1120")
+        static let surface     = SwiftUI.Color(hex: "#141E35")
+        static let card        = SwiftUI.Color(hex: "#1C2A4A")
         static let accent      = SwiftUI.Color(hex: "#2563EB")
         static let accentLight = SwiftUI.Color(hex: "#3B82F6")
         static let disponible  = SwiftUI.Color(hex: "#22C55E")
         static let ocupado     = SwiftUI.Color(hex: "#EF4444")
         static let gold        = SwiftUI.Color(hex: "#F59E0B")
         static let textPrimary = SwiftUI.Color.white
-        static let textSecond  = SwiftUI.Color(white: 1, opacity: 0.6)
+        static let textSecond  = SwiftUI.Color(white: 1, opacity: 0.55)
     }
     enum Radius {
         static let card: CGFloat   = 16
@@ -34,8 +34,13 @@ extension SwiftUI.Color {
 struct GlassCard: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .glassEffect(in: RoundedRectangle(cornerRadius: ParkTheme.Radius.card))
-            .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+            .background(ParkTheme.Color.surface)
+            .clipShape(RoundedRectangle(cornerRadius: ParkTheme.Radius.card))
+            .overlay(
+                RoundedRectangle(cornerRadius: ParkTheme.Radius.card)
+                    .strokeBorder(SwiftUI.Color.white.opacity(0.06), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -76,7 +81,7 @@ struct OcupacionBar: View {
             }
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(ParkTheme.Color.surface).frame(height: 6)
+                    Capsule().fill(ParkTheme.Color.card).frame(height: 6)
                     Capsule()
                         .fill(zona.porcentajeOcupacion > 0.8 ? ParkTheme.Color.ocupado : ParkTheme.Color.disponible)
                         .frame(width: geo.size.width * zona.porcentajeOcupacion, height: 6)

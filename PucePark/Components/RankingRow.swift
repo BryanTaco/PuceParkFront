@@ -6,6 +6,12 @@ struct RankingRow: View {
 
     private var isMe: Bool { entry.username == currentUsername }
 
+    private var displayName: String {
+        let n = entry.nombreCompleto.trimmingCharacters(in: .whitespaces)
+        if n.isEmpty || n == entry.username { return "Usuario PUCE" }
+        return n
+    }
+
     private var medalColor: Color {
         switch entry.posicion {
         case 1: return ParkTheme.Color.gold
@@ -40,11 +46,14 @@ struct RankingRow: View {
                 }
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text(entry.nombreCompleto.isEmpty ? entry.username : entry.nombreCompleto)
+                Text(displayName)
                     .font(.subheadline).fontWeight(isMe ? .bold : .regular)
                     .foregroundStyle(isMe ? ParkTheme.Color.accentLight : ParkTheme.Color.textPrimary)
-                Text("@\(entry.username)")
-                    .font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
+                if isMe {
+                    Text("Tú")
+                        .font(.caption2).fontWeight(.semibold)
+                        .foregroundStyle(ParkTheme.Color.accentLight)
+                }
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {

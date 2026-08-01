@@ -42,6 +42,12 @@ class PuestosViewController: ObservableObject {
         catch { errorMsg = error.localizedDescription }
         isActualizando = false
     }
+    func forzarOcupacion(puestoId: Int, placa: String) async {
+        isActualizando = true; errorMsg = nil; successMsg = nil
+        do { let u = try await ParkService.shared.forzarOcupacion(id: puestoId, placa: placa); patch(u); puestoSeleccionado = u; successMsg = "Entrada registrada." }
+        catch { errorMsg = error.localizedDescription }
+        isActualizando = false
+    }
     private func patch(_ u: PuestoParqueo) {
         if let i = puestos.firstIndex(where: { $0.id == u.id }) { puestos[i] = u }
     }

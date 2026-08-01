@@ -6,6 +6,7 @@ struct HistorialParqueo: Identifiable, Decodable, Sendable {
     let username: String
     let fechaIngreso: String
     let fechaSalida: String?
+    let placaVehiculo: String?
     let puesto: PuestoParqueo
 
     var estaActivo: Bool { fechaSalida == nil }

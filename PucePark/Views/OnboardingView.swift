@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    @ObservedObject var authVC: AuthViewController
     @ObservedObject var perfilVC: PerfilViewController
 
     var body: some View {
@@ -9,17 +10,37 @@ struct OnboardingView: View {
             Image("bg_campus")
                 .resizable().scaledToFill().ignoresSafeArea().opacity(0.12)
             VStack(spacing: 0) {
+                // Logout link top-right
+                HStack {
+                    Spacer()
+                    Button(action: { authVC.logout() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.left.circle")
+                                .font(.system(size: 13))
+                            Text("Cerrar sesión")
+                                .font(.system(size: 13))
+                        }
+                        .foregroundStyle(ParkTheme.Color.textSecond)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 56)
+
                 Spacer()
 
                 // ── Header ────────────────────────────────────────────
                 VStack(spacing: 12) {
-                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    Image(systemName: perfilVC.isGuard
+                          ? "shield.lefthalf.filled.badge.checkmark"
+                          : "person.crop.circle.badge.exclamationmark")
                         .font(.system(size: 60))
                         .foregroundStyle(ParkTheme.Color.gold)
-                    Text("Completa tu perfil")
+                    Text(perfilVC.isGuard ? "Registro de Guardia" : "Completa tu perfil")
                         .font(.title2).fontWeight(.bold)
                         .foregroundStyle(ParkTheme.Color.textPrimary)
-                    Text("Necesitas completar tu información para usar el sistema de parqueo.")
+                    Text(perfilVC.isGuard
+                         ? "Registra tu nombre y cédula para identificarte en el sistema."
+                         : "Necesitas completar tu información para usar el sistema de parqueo.")
                         .font(.subheadline)
                         .foregroundStyle(ParkTheme.Color.textSecond)
                         .multilineTextAlignment(.center)
@@ -29,7 +50,7 @@ struct OnboardingView: View {
 
                 // ── Campos ────────────────────────────────────────────
                 VStack(spacing: 10) {
-                    // Nombre
+                    // Nombre (siempre)
                     ValidatedField(
                         placeholder: "Nombre completo",
                         text: $perfilVC.editNombre,
@@ -37,32 +58,46 @@ struct OnboardingView: View {
                         isValid: perfilVC.nombreValido
                     )
 
-                    // Placa
-                    ValidatedField(
-                        placeholder: "Placa del vehículo (ej. PDY-1234)",
-                        text: $perfilVC.editPlaca,
-                        hint: "Formato: 3 letras + 4 dígitos (ABC-1234)",
-                        isValid: perfilVC.placaValida
-                    )
-                    .textInputAutocapitalization(.characters)
-                    .onChange(of: perfilVC.editPlaca) { _, new in
-                        // Solo letras y dígitos, máx 7 caracteres sin guion
-                        let filtered = new.uppercased().filter { $0.isLetter || $0.isNumber || $0 == "-" }
-                        if filtered != new { perfilVC.editPlaca = filtered }
-                    }
+                    if perfilVC.isGuard {
+                        // Cédula de guardia
+                        ValidatedField(
+                            placeholder: "Cédula de guardia (10 dígitos)",
+                            text: $perfilVC.editPermiso,
+                            hint: "Exactamente 10 dígitos",
+                            isValid: perfilVC.cedulaValida
+                        )
+                        .keyboardType(.numberPad)
+                        .onChange(of: perfilVC.editPermiso) { _, new in
+                            let limited = String(new.filter(\.isNumber).prefix(10))
+                            if limited != new { perfilVC.editPermiso = limited }
+                        }
+                    } else {
+                        // Placa
+                        ValidatedField(
+                            placeholder: "Placa del vehículo (ej. PDY-1234)",
+                            text: $perfilVC.editPlaca,
+                            hint: "Formato: 3 letras + 4 dígitos (ABC-1234)",
+                            isValid: perfilVC.placaValida
+                        )
+                        .textInputAutocapitalization(.characters)
+                        .onChange(of: perfilVC.editPlaca) { _, new in
+                            let filtered = new.uppercased().filter { $0.isLetter || $0.isNumber || $0 == "-" }
+                            if filtered != new { perfilVC.editPlaca = filtered }
+                        }
 
-                    // Número de permiso
-                    ValidatedField(
-                        placeholder: "Número de permiso (5-10 dígitos)",
-                        text: $perfilVC.editPermiso,
-                        hint: "Solo dígitos, entre 5 y 10 caracteres",
-                        isValid: perfilVC.permisoValido
-                    )
-                    .keyboardType(.numberPad)
-                    .onChange(of: perfilVC.editPermiso) { _, new in
-                        let filtered = new.filter(\.isNumber)
-                        let limited  = String(filtered.prefix(10))
-                        if limited != new { perfilVC.editPermiso = limited }
+                        // Número de permiso
+                        ValidatedField(
+                            placeholder: "Número de permiso (5-10 dígitos)",
+                            text: $perfilVC.editPermiso,
+                            hint: "Solo dígitos, entre 5 y 10 caracteres",
+                            isValid: perfilVC.permisoValido
+                        )
+                        .keyboardType(.numberPad)
+                        .onChange(of: perfilVC.editPermiso) { _, new in
+                            let filtered = new.filter(\.isNumber)
+                            let limited  = String(filtered.prefix(10))
+                            if limited != new { perfilVC.editPermiso = limited }
+                        }
                     }
 
                     // Mensajes del servidor
@@ -85,7 +120,6 @@ struct OnboardingView: View {
                 Spacer()
             }
         }
-        .task { await perfilVC.loadPerfil() }
     }
 }
 
