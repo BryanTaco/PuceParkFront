@@ -51,11 +51,8 @@ struct ZonaMapView: View {
                             // Stats banner
                             HStack(spacing: 0) {
                                 StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
-                                    .frame(maxWidth: .infinity)
-                                StatChip(label: "Ocupados", value: ocupados, color: ParkTheme.Color.ocupado)
-                                    .frame(maxWidth: .infinity)
-                                StatChip(label: "Total", value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
-                                    .frame(maxWidth: .infinity)
+                                StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
+                                StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
                             }
                             .padding(.vertical, 14)
                             .glassCard()
@@ -108,23 +105,19 @@ private struct PuestoCell: View {
     private var isDisponible: Bool { puesto.status == .DISPONIBLE }
     private var accent: Color { isDisponible ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado }
     var body: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(accent.opacity(0.15))
-            .frame(height: 68)
-            .overlay(
-                VStack(spacing: 5) {
-                    Image(systemName: isDisponible ? "car" : "car.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(accent)
-                    Text(puesto.spaceNumber)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
-                }
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(accent.opacity(0.5), lineWidth: 1.5)
-            )
+        ZStack {
+            RoundedRectangle(cornerRadius: 10).fill(accent.opacity(0.15))
+            VStack(spacing: 5) {
+                Image(systemName: isDisponible ? "car" : "car.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(accent)
+                Text(puesto.spaceNumber)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            RoundedRectangle(cornerRadius: 10).strokeBorder(accent.opacity(0.5), lineWidth: 1.5)
+        }
+        .frame(height: 68)
     }
 }
 
@@ -226,6 +219,7 @@ private struct StatChip: View {
             Text("\(value)").font(.title2).fontWeight(.bold).foregroundStyle(color)
             Text(label).font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
