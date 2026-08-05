@@ -3,6 +3,7 @@ import SwiftUI
 struct PerfilView: View {
     @ObservedObject var authVC:   AuthViewController
     @ObservedObject var perfilVC: PerfilViewController
+    @State private var isEditing = false
 
     var body: some View {
         NavigationStack {
@@ -17,7 +18,15 @@ struct PerfilView: View {
                             PerfilHero(perfil: perfilVC.perfil, session: authVC.session)
 
                             VStack(spacing: 16) {
-                                FormCard(perfilVC: perfilVC, isGuard: authVC.session?.isGuard ?? false)
+                                if isEditing {
+                                    FormCard(
+                                        perfilVC: perfilVC,
+                                        isGuard: authVC.session?.isGuard ?? false,
+                                        onGuardado: { isEditing = false }
+                                    )
+                                } else {
+                                    PerfilInfoCard(perfil: perfilVC.perfil, isGuard: authVC.session?.isGuard ?? false)
+                                }
                                 LogoutButton { authVC.logout() }
                             }
                             .padding(16)
@@ -26,9 +35,34 @@ struct PerfilView: View {
                     }
                     .refreshable { await perfilVC.loadPerfil() }
                     .ignoresSafeArea(edges: .top)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            if !isEditing {
+                                Button {
+                                    isEditing = true
+                                } label: {
+                                    Image(systemName: "pencil")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundStyle(ParkTheme.Color.accentLight)
+                                }
+                            } else {
+                                Button("Cancelar") {
+                                    perfilVC.errorMsg = nil
+                                    perfilVC.successMsg = nil
+                                    if let p = perfilVC.perfil {
+                                        perfilVC.editNombre = p.fullName
+                                        perfilVC.editPlaca = p.vehiclePlate
+                                        perfilVC.editPermiso = p.permitNumber
+                                    }
+                                    isEditing = false
+                                }
+                                .foregroundStyle(ParkTheme.Color.textSecond)
+                            }
+                        }
+                    }
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
@@ -138,10 +172,50 @@ private struct PerfilHero: View {
     }
 }
 
-// ── FORM CARD ─────────────────────────────────────────────────────────────────
+// ── INFO CARD (modo lectura) ───────────────────────────────────────────────────
+private struct PerfilInfoCard: View {
+    let perfil: PerfilUsuario?
+    let isGuard: Bool
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Información personal")
+                .font(.subheadline).fontWeight(.semibold).foregroundStyle(ParkTheme.Color.textSecond)
+
+            InfoRow(icon: "person.fill", label: "Nombre", value: perfil?.fullName ?? "—")
+
+            if isGuard {
+                InfoRow(icon: "creditcard.fill", label: "Cédula", value: perfil?.permitNumber ?? "—")
+            } else {
+                InfoRow(icon: "car.fill", label: "Placa", value: perfil?.vehiclePlate ?? "—")
+                InfoRow(icon: "doc.fill", label: "Permiso", value: perfil?.permitNumber ?? "—")
+            }
+        }
+        .padding(16).glassCard()
+    }
+}
+
+private struct InfoRow: View {
+    let icon: String; let label: String; let value: String
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(ParkTheme.Color.accentLight)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(label).font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
+                Text(value).font(.system(size: 15, weight: .medium)).foregroundStyle(ParkTheme.Color.textPrimary)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+// ── FORM CARD (modo edición) ───────────────────────────────────────────────────
 private struct FormCard: View {
     @ObservedObject var perfilVC: PerfilViewController
     let isGuard: Bool
+    var onGuardado: () -> Void = {}
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Información personal")
@@ -200,7 +274,10 @@ private struct FormCard: View {
             }
 
             PrimaryButton(title: "Guardar cambios", isLoading: perfilVC.isSaving) {
-                Task { await perfilVC.savePerfil() }
+                Task {
+                    await perfilVC.savePerfil()
+                    if perfilVC.errorMsg == nil { onGuardado() }
+                }
             }
             .disabled(!perfilVC.canSave)
         }

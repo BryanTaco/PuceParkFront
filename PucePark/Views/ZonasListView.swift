@@ -1,10 +1,14 @@
 import SwiftUI
 
 struct ZonasListView: View {
-    @StateObject private var zonasVC = ZonasViewController()
+    @StateObject private var zonasVC    = ZonasViewController()
+    @StateObject private var historialVC = HistorialViewController()
+    @State private var isLiberando = false
 
     var totalDisponibles: Int { zonasVC.zonas.reduce(0) { $0 + $1.availableSpaces } }
     var totalOcupados:    Int { zonasVC.zonas.reduce(0) { $0 + $1.occupiedSpaces  } }
+
+    private var sesionActiva: HistorialParqueo? { historialVC.sesionesActivas.first }
 
     var body: some View {
         NavigationStack {
@@ -28,6 +32,24 @@ struct ZonasListView: View {
                                 totalDisponibles: totalDisponibles,
                                 totalOcupados: totalOcupados
                             )
+
+                            if let sesion = sesionActiva {
+                                DesocuparBanner(
+                                    sesion: sesion,
+                                    isLiberando: $isLiberando,
+                                    onDesocupar: {
+                                        Task {
+                                            isLiberando = true
+                                            _ = try? await ParkService.shared.liberarPuesto(id: sesion.space.id)
+                                            await historialVC.loadHistorial()
+                                            await zonasVC.loadZonas()
+                                            isLiberando = false
+                                        }
+                                    }
+                                )
+                                .padding(.horizontal, 16)
+                                .padding(.top, 16)
+                            }
 
                             LazyVStack(spacing: 12) {
                                 if zonasVC.zonas.isEmpty {
@@ -60,7 +82,10 @@ struct ZonasListView: View {
             }
             .toolbar(.hidden, for: .navigationBar)
         }
-        .task { await zonasVC.loadZonas() }
+        .task {
+            await zonasVC.loadZonas()
+            await historialVC.loadHistorial()
+        }
     }
 }
 
@@ -170,5 +195,58 @@ private struct HeroStat: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.white.opacity(0.55))
         }
+    }
+}
+
+// ── Banner de puesto activo con botón desocupar ───────────────────────────────
+private struct DesocuparBanner: View {
+    let sesion: HistorialParqueo
+    @Binding var isLiberando: Bool
+    let onDesocupar: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(ParkTheme.Color.disponible.opacity(0.18))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "car.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(ParkTheme.Color.disponible)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Tienes un puesto activo")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(ParkTheme.Color.textPrimary)
+                Text("\(sesion.space.zone.name) · \(sesion.space.spaceNumber)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(ParkTheme.Color.textSecond)
+            }
+
+            Spacer()
+
+            Button(action: onDesocupar) {
+                Group {
+                    if isLiberando {
+                        ProgressView().tint(.white).scaleEffect(0.8)
+                    } else {
+                        Text("Desocupar")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .frame(width: 88, height: 34)
+                .background(ParkTheme.Color.ocupado)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .disabled(isLiberando)
+        }
+        .padding(14)
+        .glassCard()
+        .overlay(
+            RoundedRectangle(cornerRadius: ParkTheme.Radius.card)
+                .strokeBorder(ParkTheme.Color.disponible.opacity(0.4), lineWidth: 1)
+        )
     }
 }
