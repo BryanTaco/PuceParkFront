@@ -15,7 +15,7 @@ struct HistorialRow: View {
             }
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(entrada.puesto.zona.nombre)
+                    Text(entrada.space.zone.name)
                         .font(.subheadline).fontWeight(.semibold)
                         .foregroundStyle(ParkTheme.Color.textPrimary)
                     Spacer()
@@ -26,11 +26,11 @@ struct HistorialRow: View {
                         .foregroundStyle(entrada.estaActivo ? ParkTheme.Color.disponible : ParkTheme.Color.textSecond)
                         .clipShape(Capsule())
                 }
-                Text("Puesto \(entrada.puesto.numeroPuesto) · Fila \(entrada.puesto.fila)")
+                Text("Puesto \(entrada.space.spaceNumber) · Fila \(entrada.space.row)")
                     .font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
                 Text(entrada.duracionTexto)
                     .font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
-                Text("Ticket: \(entrada.codigoTicket)")
+                Text("Ticket: \(entrada.ticketCode)")
                     .font(.caption2)
                     .foregroundStyle(ParkTheme.Color.accentLight)
                     .fontDesign(.monospaced)

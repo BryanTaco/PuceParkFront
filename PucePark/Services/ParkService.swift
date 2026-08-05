@@ -71,7 +71,7 @@ class ParkService {
     }
 
     func forzarOcupacion(id: Int, placa: String) async throws -> PuestoParqueo {
-        let body: [String: Any] = ["placaVehiculo": placa]
+        let body: [String: Any] = ["vehiclePlate": placa]
         return try await perform("\(base)/puestos/\(id)/forzar-ocupacion", method: .put,
                                  parameters: body, encoding: JSONEncoding.default)
     }
@@ -84,9 +84,9 @@ class ParkService {
         try await perform("\(base)/perfil/me/estado")
     }
 
-    func updatePerfil(nombreCompleto: String, placaVehiculo: String, numeroPermiso: String, modoOscuro: Bool) async throws -> PerfilUsuario {
-        let body: [String: Any] = ["nombreCompleto": nombreCompleto, "placaVehiculo": placaVehiculo,
-                                    "numeroPermiso": numeroPermiso, "modoOscuro": modoOscuro]
+    func updatePerfil(fullName: String, vehiclePlate: String, permitNumber: String, darkMode: Bool) async throws -> PerfilUsuario {
+        let body: [String: Any] = ["fullName": fullName, "vehiclePlate": vehiclePlate,
+                                    "permitNumber": permitNumber, "darkMode": darkMode]
         return try await perform("\(base)/perfil/me", method: .put,
                                  parameters: body, encoding: JSONEncoding.default)
     }

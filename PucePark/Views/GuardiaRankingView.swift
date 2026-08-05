@@ -14,7 +14,7 @@ struct GuardiaRankingView: View {
         let year = cal.component(.year, from: now)
         let month = cal.component(.month, from: now)
         return guardiaVC.registros.filter { r in
-            guard let d = parseISODate(r.fechaIngreso) else { return false }
+            guard let d = parseISODate(r.entryDate) else { return false }
             return cal.component(.year, from: d) == year && cal.component(.month, from: d) == month
         }
     }
@@ -174,7 +174,7 @@ private struct GuardiaStatChip: View {
 private struct GuardiaMesRow: View {
     let registro: HistorialParqueo
     private var hora: String {
-        let parts = registro.fechaIngreso.split(separator: "T")
+        let parts = registro.entryDate.split(separator: "T")
         guard parts.count > 1 else { return "" }
         return String(parts[1].prefix(5))
     }
@@ -187,10 +187,10 @@ private struct GuardiaMesRow: View {
                     .font(.system(size: 14))
                     .foregroundStyle(registro.estaActivo ? ParkTheme.Color.disponible : ParkTheme.Color.textSecond))
             VStack(alignment: .leading, spacing: 2) {
-                Text(registro.placaVehiculo ?? "—")
+                Text(registro.vehiclePlate ?? "—")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(ParkTheme.Color.textPrimary)
-                Text("\(registro.puesto.zona.nombre) · \(registro.puesto.numeroPuesto) · \(hora)")
+                Text("\(registro.space.zone.name) · \(registro.space.spaceNumber) · \(hora)")
                     .font(.system(size: 11)).foregroundStyle(ParkTheme.Color.textSecond)
             }
             Spacer()

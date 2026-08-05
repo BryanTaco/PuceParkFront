@@ -12,10 +12,10 @@ class PuestosViewController: ObservableObject {
 
     var filas: [String] {
         var seen = Set<String>()
-        return puestos.compactMap { p in seen.insert(p.fila).inserted ? p.fila : nil }
+        return puestos.compactMap { p in seen.insert(p.row).inserted ? p.row : nil }
     }
     func puestosEnFila(_ fila: String) -> [PuestoParqueo] {
-        puestos.filter { $0.fila == fila }.sorted { $0.orden < $1.orden }
+        puestos.filter { $0.row == fila }.sorted { $0.order < $1.order }
     }
 
     func loadPuestosDeZona(zonaId: Int) async {

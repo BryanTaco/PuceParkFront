@@ -1,19 +1,19 @@
 import Foundation
 
 struct EstadisticasPersonales: Decodable, Sendable {
-    let mes: String
-    let totalSesiones: Int
-    let totalHoras: Double
-    let promedioHorasPorSesion: Double
+    let month: String
+    let totalSessions: Int
+    let totalHours: Double
+    let avgHoursPerSession: Double
 }
 
 struct RankingEntrada: Identifiable, Decodable, Sendable {
-    let posicion: Int
+    let position: Int
     let username: String
-    let nombreCompleto: String
-    let totalHoras: Double
-    let totalSesiones: Int
-    var id: Int { posicion }
+    let fullName: String
+    let totalHours: Double
+    let totalSessions: Int
+    var id: Int { position }
 }
 
 struct AuthSession: Sendable {

@@ -40,7 +40,7 @@ private struct PerfilHero: View {
     @State private var appeared = false
 
     private var nombre: String {
-        if let n = perfil?.nombreCompleto, !n.isEmpty { return n }
+        if let n = perfil?.fullName, !n.isEmpty { return n }
         return session?.username ?? "Usuario"
     }
     private var inicial: String { String(nombre.prefix(1)).uppercased() }

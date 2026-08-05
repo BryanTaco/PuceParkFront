@@ -7,9 +7,9 @@ struct ZonaCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(zona.nombre)
+                    Text(zona.name)
                         .font(.headline).foregroundStyle(ParkTheme.Color.textPrimary)
-                    Text(zona.ubicacion)
+                    Text(zona.location)
                         .font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
                 }
                 Spacer()
@@ -17,8 +17,8 @@ struct ZonaCard: View {
                     .foregroundStyle(ParkTheme.Color.accentLight)
                     .font(.title2)
             }
-            if !zona.descripcion.isEmpty {
-                Text(zona.descripcion)
+            if !zona.description.isEmpty {
+                Text(zona.description)
                     .font(.caption)
                     .foregroundStyle(ParkTheme.Color.textSecond)
                     .lineLimit(2)

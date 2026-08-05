@@ -64,7 +64,7 @@ struct HistorialView: View {
     private var racha: Int {
         let cal = Calendar.current
         let dias = Set(historialVC.historial.compactMap { h -> Date? in
-            guard let d = parseISO(h.fechaIngreso) else { return nil }
+            guard let d = parseISO(h.entryDate) else { return nil }
             return cal.startOfDay(for: d)
         }).sorted(by: >)
         var streak = 0
@@ -86,7 +86,7 @@ private struct HistorialHero: View {
     @State private var appeared = false
 
     private var duracion: String {
-        guard let a = activa, let start = parseISO(a.fechaIngreso) else { return "—" }
+        guard let a = activa, let start = parseISO(a.entryDate) else { return "—" }
         let secs = max(0, Int(now.timeIntervalSince(start)))
         let h = secs / 3600; let m = (secs % 3600) / 60
         return h > 0 ? "\(h)h \(m)m" : "\(m)m"
@@ -160,7 +160,7 @@ private struct HistorialHero: View {
                 if let activa {
                     HStack(spacing: 6) {
                         PulsingDot()
-                        Text("Activo · \(activa.puesto.zona.nombre) · \(duracion)")
+                        Text("Activo · \(activa.space.zone.name) · \(duracion)")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(ParkTheme.Color.disponible)
                     }
@@ -171,8 +171,8 @@ private struct HistorialHero: View {
                     .animation(.easeOut(duration: 0.4).delay(0.35), value: appeared)
                 } else if let s = stats {
                     HStack(spacing: 28) {
-                        HeroStatSmall(value: String(format: "%.1fh", s.totalHoras), label: "este mes", color: ParkTheme.Color.accentLight)
-                        HeroStatSmall(value: "\(s.totalSesiones)", label: "sesiones", color: ParkTheme.Color.disponible)
+                        HeroStatSmall(value: String(format: "%.1fh", s.totalHours), label: "este mes", color: ParkTheme.Color.accentLight)
+                        HeroStatSmall(value: "\(s.totalSessions)", label: "sesiones", color: ParkTheme.Color.disponible)
                         if racha > 0 {
                             HeroStatSmall(value: "\(racha)d", label: "racha", color: ParkTheme.Color.gold)
                         }

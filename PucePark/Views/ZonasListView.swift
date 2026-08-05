@@ -4,8 +4,8 @@ struct ZonasListView: View {
     @StateObject private var zonasVC   = ZonasViewController()
     @StateObject private var puestosVC = PuestosViewController()
 
-    var totalDisponibles: Int { zonasVC.zonas.reduce(0) { $0 + $1.puestosDisponibles } }
-    var totalOcupados:    Int { zonasVC.zonas.reduce(0) { $0 + $1.puestosOcupados   } }
+    var totalDisponibles: Int { zonasVC.zonas.reduce(0) { $0 + $1.availableSpaces } }
+    var totalOcupados:    Int { zonasVC.zonas.reduce(0) { $0 + $1.occupiedSpaces  } }
 
     var body: some View {
         NavigationStack {

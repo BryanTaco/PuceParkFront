@@ -160,8 +160,8 @@ private struct GuardiaRegistroRow: View {
     let registro: HistorialParqueo
 
     private var hora: String {
-        let parts = registro.fechaIngreso.split(separator: "T")
-        guard parts.count > 1 else { return registro.fechaIngreso }
+        let parts = registro.entryDate.split(separator: "T")
+        guard parts.count > 1 else { return registro.entryDate }
         return String(parts[1].prefix(5))
     }
 
@@ -178,7 +178,7 @@ private struct GuardiaRegistroRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(registro.placaVehiculo ?? "—")
+                    Text(registro.vehiclePlate ?? "—")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(ParkTheme.Color.textPrimary)
                     if registro.estaActivo {
@@ -190,7 +190,7 @@ private struct GuardiaRegistroRow: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text("\(registro.puesto.zona.nombre) · Puesto \(registro.puesto.numeroPuesto) · \(hora)")
+                Text("\(registro.space.zone.name) · Puesto \(registro.space.spaceNumber) · \(hora)")
                     .font(.system(size: 12))
                     .foregroundStyle(ParkTheme.Color.textSecond)
             }

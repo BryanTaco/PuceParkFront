@@ -61,10 +61,10 @@ class PerfilViewController: ObservableObject {
         isSaving = true; errorMsg = nil; successMsg = nil
         do {
             let u = try await ParkService.shared.updatePerfil(
-                nombreCompleto: editNombre.trimmingCharacters(in: .whitespacesAndNewlines),
-                placaVehiculo:  isGuard ? "" : editPlaca.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
-                numeroPermiso:  editPermiso.trimmingCharacters(in: .whitespacesAndNewlines),
-                modoOscuro:     false)
+                fullName:     editNombre.trimmingCharacters(in: .whitespacesAndNewlines),
+                vehiclePlate: isGuard ? "" : editPlaca.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(),
+                permitNumber: editPermiso.trimmingCharacters(in: .whitespacesAndNewlines),
+                darkMode:     false)
             perfil = u; estado = try await ParkService.shared.getPerfilEstado()
             successMsg = "Perfil actualizado"
         } catch { errorMsg = "No se pudo guardar el perfil." }
@@ -72,7 +72,7 @@ class PerfilViewController: ObservableObject {
     }
 
     private func fill(from p: PerfilUsuario) {
-        editNombre = p.nombreCompleto; editPlaca = p.placaVehiculo
-        editPermiso = p.numeroPermiso
+        editNombre = p.fullName; editPlaca = p.vehiclePlate
+        editPermiso = p.permitNumber
     }
 }

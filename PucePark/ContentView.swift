@@ -41,7 +41,7 @@ private func shouldShowOnboarding(session: AuthSession?, perfilVC: PerfilViewCon
     if session?.isGuard == true || session?.isAdmin == true {
         return !perfilVC.nombreValido
     }
-    return perfilVC.estado?.completo == false
+    return perfilVC.estado?.complete == false
 }
 
 private struct MainTabView: View {

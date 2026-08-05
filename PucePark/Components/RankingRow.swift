@@ -7,13 +7,13 @@ struct RankingRow: View {
     private var isMe: Bool { entry.username == currentUsername }
 
     private var displayName: String {
-        let n = entry.nombreCompleto.trimmingCharacters(in: .whitespaces)
+        let n = entry.fullName.trimmingCharacters(in: .whitespaces)
         if n.isEmpty || n == entry.username { return "Usuario PUCE" }
         return n
     }
 
     private var medalColor: Color {
-        switch entry.posicion {
+        switch entry.position {
         case 1: return ParkTheme.Color.gold
         case 2: return Color(hex: "#94A3B8")
         case 3: return Color(hex: "#CD7F32")
@@ -21,7 +21,7 @@ struct RankingRow: View {
         }
     }
     private var medalIcon: String {
-        switch entry.posicion {
+        switch entry.position {
         case 1: return "medal.fill"
         case 2: return "medal.fill"
         case 3: return "medal.fill"
@@ -35,12 +35,12 @@ struct RankingRow: View {
                 Circle()
                     .fill(isMe ? ParkTheme.Color.accent.opacity(0.2) : ParkTheme.Color.surface)
                     .frame(width: 40, height: 40)
-                if entry.posicion <= 3 {
+                if entry.position <= 3 {
                     Image(systemName: medalIcon)
                         .foregroundStyle(medalColor)
                         .font(.system(size: 18))
                 } else {
-                    Text("\(entry.posicion)")
+                    Text("\(entry.position)")
                         .font(.subheadline).fontWeight(.bold)
                         .foregroundStyle(ParkTheme.Color.textSecond)
                 }
@@ -57,10 +57,10 @@ struct RankingRow: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
-                Text(String(format: "%.1f h", entry.totalHoras))
+                Text(String(format: "%.1f h", entry.totalHours))
                     .font(.subheadline).fontWeight(.semibold)
                     .foregroundStyle(ParkTheme.Color.textPrimary)
-                Text("\(entry.totalSesiones) sesiones")
+                Text("\(entry.totalSessions) sesiones")
                     .font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
             }
         }

@@ -73,10 +73,10 @@ struct OcupacionBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("\(zona.puestosDisponibles) disponibles")
+                Text("\(zona.availableSpaces) disponibles")
                     .font(.caption).foregroundStyle(ParkTheme.Color.disponible)
                 Spacer()
-                Text("\(zona.puestosOcupados)/\(zona.totalPuestos)")
+                Text("\(zona.occupiedSpaces)/\(zona.totalSpaces)")
                     .font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
             }
             GeometryReader { geo in

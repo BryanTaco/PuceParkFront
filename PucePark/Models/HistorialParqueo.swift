@@ -2,18 +2,18 @@ import Foundation
 
 struct HistorialParqueo: Identifiable, Decodable, Sendable {
     let id: Int
-    let codigoTicket: String
+    let ticketCode: String
     let username: String
-    let fechaIngreso: String
-    let fechaSalida: String?
-    let placaVehiculo: String?
-    let puesto: PuestoParqueo
+    let entryDate: String
+    let exitDate: String?
+    let vehiclePlate: String?
+    let space: PuestoParqueo
 
-    var estaActivo: Bool { fechaSalida == nil }
+    var estaActivo: Bool { exitDate == nil }
 
     var duracionTexto: String {
-        guard let salida = fechaSalida else { return "En curso" }
-        return "\(fechaIngreso.horaCorta) → \(salida.horaCorta)"
+        guard let salida = exitDate else { return "En curso" }
+        return "\(entryDate.horaCorta) → \(salida.horaCorta)"
     }
 }
 

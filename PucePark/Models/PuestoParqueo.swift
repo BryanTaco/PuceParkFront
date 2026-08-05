@@ -7,9 +7,9 @@ enum EstadoPuesto: String, Decodable, Sendable {
 
 struct PuestoParqueo: Identifiable, Decodable, Sendable {
     let id: Int
-    let numeroPuesto: String
-    let fila: String
-    let orden: Int
-    let estado: EstadoPuesto
-    let zona: ZonaParqueo
+    let spaceNumber: String
+    let row: String
+    let order: Int
+    let status: EstadoPuesto
+    let zone: ZonaParqueo
 }

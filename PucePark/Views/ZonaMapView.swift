@@ -10,8 +10,8 @@ struct ZonaMapView: View {
     private let columns = [GridItem(.flexible()), GridItem(.flexible()),
                            GridItem(.flexible()), GridItem(.flexible())]
 
-    private var disponibles: Int { puestosVC.puestos.filter { $0.estado == .DISPONIBLE }.count }
-    private var ocupados:    Int { puestosVC.puestos.filter { $0.estado == .OCUPADO  }.count }
+    private var disponibles: Int { puestosVC.puestos.filter { $0.status == .DISPONIBLE }.count }
+    private var ocupados:    Int { puestosVC.puestos.filter { $0.status == .OCUPADO  }.count }
 
     private func esAcceso(_ msg: String) -> Bool {
         let low = msg.lowercased()
@@ -87,7 +87,7 @@ struct ZonaMapView: View {
                 }
             }
         }
-        .navigationTitle(zona.nombre)
+        .navigationTitle(zona.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
         .sheet(item: $sheetPuesto) { p in
@@ -107,20 +107,20 @@ private struct PuestoCell: View {
     var body: some View {
         VStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 8)
-                .fill(puesto.estado == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.2) : ParkTheme.Color.ocupado.opacity(0.2))
+                .fill(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.2) : ParkTheme.Color.ocupado.opacity(0.2))
                 .frame(height: 52)
                 .overlay(
                     VStack(spacing: 2) {
-                        Image(systemName: puesto.estado == .DISPONIBLE ? "car" : "car.fill")
+                        Image(systemName: puesto.status == .DISPONIBLE ? "car" : "car.fill")
                             .font(.system(size: 16))
-                            .foregroundStyle(puesto.estado == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
-                        Text(puesto.numeroPuesto)
+                            .foregroundStyle(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
+                        Text(puesto.spaceNumber)
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(puesto.estado == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
+                            .foregroundStyle(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
                     }
                 )
                 .overlay(RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(puesto.estado == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.4) : ParkTheme.Color.ocupado.opacity(0.4), lineWidth: 1))
+                    .strokeBorder(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.4) : ParkTheme.Color.ocupado.opacity(0.4), lineWidth: 1))
         }
     }
 }
@@ -141,14 +141,14 @@ private struct PuestoSheet: View {
 
             // Header
             VStack(spacing: 6) {
-                Text("Puesto \(puesto.numeroPuesto)")
+                Text("Puesto \(puesto.spaceNumber)")
                     .font(.title2).fontWeight(.bold)
                     .foregroundStyle(ParkTheme.Color.textPrimary)
-                Text("Zona \(puesto.zona.nombre) · Fila \(puesto.fila) · Orden \(puesto.orden)")
+                Text("Zona \(puesto.zone.name) · Fila \(puesto.row) · Orden \(puesto.order)")
                     .font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
-                Label(puesto.estado == .DISPONIBLE ? "Disponible" : "Ocupado",
-                      systemImage: puesto.estado == .DISPONIBLE ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundStyle(puesto.estado == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
+                Label(puesto.status == .DISPONIBLE ? "Disponible" : "Ocupado",
+                      systemImage: puesto.status == .DISPONIBLE ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
                     .font(.subheadline).fontWeight(.semibold)
             }
 
@@ -162,7 +162,7 @@ private struct PuestoSheet: View {
             VStack(spacing: 12) {
                 if isGuard {
                     // ── GUARD / ADMIN ACTIONS ─────────────────────────
-                    if puesto.estado == .DISPONIBLE {
+                    if puesto.status == .DISPONIBLE {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Registrar entrada manual")
                                 .font(.caption).fontWeight(.semibold)
@@ -196,7 +196,7 @@ private struct PuestoSheet: View {
                     }
                 } else {
                     // ── DRIVER ACTIONS ────────────────────────────────
-                    if puesto.estado == .DISPONIBLE {
+                    if puesto.status == .DISPONIBLE {
                         PrimaryButton(title: "Ocupar este puesto", isLoading: puestosVC.isActualizando) {
                             Task { await puestosVC.ocupar(puestoId: puesto.id); onActualizado() }
                         }
