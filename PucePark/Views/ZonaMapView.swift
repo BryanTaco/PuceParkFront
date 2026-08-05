@@ -48,15 +48,17 @@ struct ZonaMapView: View {
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 20) {
-                            // Stats banner — computed live from puestosVC so it updates instantly
+                            // Stats banner
                             HStack(spacing: 0) {
                                 StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
-                                Spacer()
-                                StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
-                                Spacer()
-                                StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
+                                    .frame(maxWidth: .infinity)
+                                StatChip(label: "Ocupados", value: ocupados, color: ParkTheme.Color.ocupado)
+                                    .frame(maxWidth: .infinity)
+                                StatChip(label: "Total", value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
+                                    .frame(maxWidth: .infinity)
                             }
-                            .padding(14).glassCard()
+                            .padding(.vertical, 14)
+                            .glassCard()
 
                             // Grid per fila
                             ForEach(puestosVC.filas, id: \.self) { fila in
@@ -103,24 +105,26 @@ struct ZonaMapView: View {
 
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
+    private var isDisponible: Bool { puesto.status == .DISPONIBLE }
+    private var accent: Color { isDisponible ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado }
     var body: some View {
-        VStack(spacing: 4) {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.2) : ParkTheme.Color.ocupado.opacity(0.2))
-                .frame(height: 52)
-                .overlay(
-                    VStack(spacing: 2) {
-                        Image(systemName: puesto.status == .DISPONIBLE ? "car" : "car.fill")
-                            .font(.system(size: 16))
-                            .foregroundStyle(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
-                        Text(puesto.spaceNumber)
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
-                    }
-                )
-                .overlay(RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(puesto.status == .DISPONIBLE ? ParkTheme.Color.disponible.opacity(0.4) : ParkTheme.Color.ocupado.opacity(0.4), lineWidth: 1))
-        }
+        RoundedRectangle(cornerRadius: 10)
+            .fill(accent.opacity(0.15))
+            .frame(height: 68)
+            .overlay(
+                VStack(spacing: 5) {
+                    Image(systemName: isDisponible ? "car" : "car.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(accent)
+                    Text(puesto.spaceNumber)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(accent.opacity(0.5), lineWidth: 1.5)
+            )
     }
 }
 
