@@ -6,6 +6,7 @@ struct ZonaMapView: View {
     @StateObject private var puestosVC = PuestosViewController()
     @Environment(\.authSession) private var session
     @State private var sheetPuesto: PuestoParqueo?
+    @State private var showAlto = false
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -89,13 +90,20 @@ struct ZonaMapView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
         .sheet(item: $sheetPuesto) { p in
-            PuestoSheet(puesto: p, puestosVC: puestosVC, session: session) {
-                sheetPuesto = puestosVC.puestoSeleccionado
-            }
+            PuestoSheet(
+                puesto: p,
+                puestosVC: puestosVC,
+                session: session,
+                onActualizado: { sheetPuesto = puestosVC.puestoSeleccionado },
+                onError: { sheetPuesto = nil; puestosVC.errorMsg = nil; showAlto = true }
+            )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
             .presentationBackground(ParkTheme.Color.surface)
             .onDisappear { onEstadoCambiado?() }
+        }
+        .fullScreenCover(isPresented: $showAlto) {
+            AltoView { showAlto = false }
         }
     }
 }
@@ -103,22 +111,19 @@ struct ZonaMapView: View {
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
     var body: some View {
-        let ok = puesto.status == .DISPONIBLE
-        let tint: Color = ok ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado
-        return VStack(spacing: 5) {
-            Image(systemName: ok ? "car" : "car.fill")
-                .font(.system(size: 20))
-                .foregroundColor(tint)
-            Text(puesto.spaceNumber)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 68)
-        .background(tint.opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10)
-            .strokeBorder(tint.opacity(0.5), lineWidth: 1.5))
+        Text(puesto.spaceNumber)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(puesto.status == .DISPONIBLE
+                ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
+            .frame(maxWidth: .infinity)
+            .frame(height: 68)
+            .background((puesto.status == .DISPONIBLE
+                ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado).opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .strokeBorder((puesto.status == .DISPONIBLE
+                    ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado).opacity(0.5),
+                    lineWidth: 1.5))
     }
 }
 
@@ -127,6 +132,7 @@ private struct PuestoSheet: View {
     @ObservedObject var puestosVC: PuestosViewController
     let session: AuthSession?
     let onActualizado: () -> Void
+    var onError: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @State private var placaGuardia = ""
 
@@ -149,23 +155,9 @@ private struct PuestoSheet: View {
                     .font(.subheadline).fontWeight(.semibold)
             }
 
-            if let err = puestosVC.errorMsg {
-                VStack(spacing: 6) {
-                    Label("¡Alto!", systemImage: "exclamationmark.triangle.fill")
-                        .font(.subheadline).fontWeight(.bold)
-                        .foregroundStyle(ParkTheme.Color.gold)
-                    Text(friendlyActionError(err))
-                        .font(.caption)
-                        .foregroundStyle(ParkTheme.Color.textPrimary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity)
-                .background(ParkTheme.Color.gold.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(ParkTheme.Color.gold.opacity(0.4), lineWidth: 1))
-                .padding(.horizontal)
+            if let err = puestosVC.errorMsg, !isAltoError(err) {
+                Text(err).font(.caption).foregroundStyle(ParkTheme.Color.ocupado)
+                    .multilineTextAlignment(.center).padding(.horizontal)
             }
             if let ok = puestosVC.successMsg {
                 Text(ok).font(.caption).foregroundStyle(ParkTheme.Color.disponible)
@@ -210,7 +202,11 @@ private struct PuestoSheet: View {
                     // ── DRIVER ACTIONS ────────────────────────────────
                     if puesto.status == .DISPONIBLE {
                         PrimaryButton(title: "Ocupar este puesto", isLoading: puestosVC.isActualizando) {
-                            Task { await puestosVC.ocupar(puestoId: puesto.id); onActualizado() }
+                            Task {
+                                await puestosVC.ocupar(puestoId: puesto.id)
+                                if let err = puestosVC.errorMsg, isAltoError(err) { onError() }
+                                else { onActualizado() }
+                            }
                         }
                     } else {
                         PrimaryButton(title: "Liberar puesto", isLoading: puestosVC.isActualizando) {
@@ -228,18 +224,9 @@ private struct PuestoSheet: View {
     }
 }
 
-private func friendlyActionError(_ msg: String) -> String {
+private func isAltoError(_ msg: String) -> Bool {
     let low = msg.lowercased()
-    if low.contains("active space") || low.contains("active") && low.contains("release") {
-        return "Ya tienes un espacio ocupado. Libéralo antes de ocupar otro."
-    }
-    if low.contains("not found") || low.contains("no encontrado") {
-        return "El puesto ya no existe. Actualiza la lista."
-    }
-    if low.contains("already occupied") || low.contains("ya está ocupado") {
-        return "Este puesto ya está ocupado por otra persona."
-    }
-    return msg
+    return low.contains("active") || low.contains("activo") || low.contains("ya tiene")
 }
 
 private struct StatChip: View {
@@ -260,6 +247,93 @@ private struct LegendDot: View {
             Circle().fill(color).frame(width: 10, height: 10)
             Text(label).font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
         }
+    }
+}
+
+// ── ALTO VIEW — pantalla completa de advertencia ──────────────────────────────
+private struct AltoView: View {
+    let onDismiss: () -> Void
+    @State private var appeared = false
+
+    var body: some View {
+        ZStack {
+            Color(hex: "#0D0000").ignoresSafeArea()
+            CinematicBackground(accent: Color(hex: "#DC2626"), accent2: Color(hex: "#7F1D1D"))
+                .ignoresSafeArea().opacity(0.55)
+            LinearGradient(colors: [.black.opacity(0.25), .black.opacity(0.65)],
+                           startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+
+            // Background mega-text
+            Text("ALTO")
+                .font(.system(size: 180, weight: .black))
+                .foregroundStyle(.white.opacity(0.04))
+                .kerning(-6)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .allowsHitTesting(false)
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Animated warning icon
+                ZStack {
+                    Circle().fill(.white.opacity(0.07)).frame(width: 150, height: 150)
+                    Circle().fill(.white.opacity(0.07)).frame(width: 110, height: 110)
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 62))
+                        .foregroundStyle(ParkTheme.Color.gold)
+                }
+                .scaleEffect(appeared ? 1 : 0.35)
+                .opacity(appeared ? 1 : 0)
+                .animation(.spring(duration: 0.7, bounce: 0.5).delay(0.08), value: appeared)
+
+                Spacer().frame(height: 36)
+
+                Text("¡Alto!")
+                    .font(.system(size: 58, weight: .black))
+                    .foregroundStyle(.white)
+                    .kerning(-2)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 28)
+                    .animation(.easeOut(duration: 0.55).delay(0.28), value: appeared)
+
+                Spacer().frame(height: 14)
+
+                Text("Ya tienes un espacio ocupado.")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .multilineTextAlignment(.center)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 18)
+                    .animation(.easeOut(duration: 0.5).delay(0.36), value: appeared)
+
+                Spacer().frame(height: 10)
+
+                Text("Libera tu puesto activo antes\nde ocupar otro.")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 48)
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 12)
+                    .animation(.easeOut(duration: 0.45).delay(0.43), value: appeared)
+
+                Spacer()
+
+                Button(action: onDismiss) {
+                    Text("Entendido")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity).frame(height: 56)
+                        .background(ParkTheme.Color.ocupado)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 56)
+                .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.4).delay(0.52), value: appeared)
+            }
+        }
+        .onAppear { appeared = true }
     }
 }
 
