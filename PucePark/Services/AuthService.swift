@@ -40,9 +40,9 @@ class AuthService {
         let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? 0
 
         guard statusCode == 200 else {
-            let raw = String(data: data, encoding: .utf8) ?? "sin detalle"
+            let raw = String(data: data, encoding: .utf8) ?? ""
             print("🔴 COGNITO ERROR \(statusCode): \(raw)")
-            throw CognitoError(message: "[\(statusCode)] \(raw)")
+            throw CognitoError(message: friendlyError(from: data))
         }
 
         let decoded = try JSONDecoder().decode(CognitoResponse.self, from: data)
@@ -65,6 +65,19 @@ class AuthService {
         guard let token = savedToken, let username = savedUsername else { return nil }
         if isTokenExpired(token) { logout(); return nil }
         return AuthSession(idToken: token, accessToken: "", username: username, grupos: savedGrupos)
+    }
+
+    private func friendlyError(from data: Data) -> String {
+        struct CognitoErr: Decodable { let __type: String?; let message: String? }
+        let err = try? JSONDecoder().decode(CognitoErr.self, from: data)
+        switch err?.__type {
+        case "NotAuthorizedException":       return "Contraseña incorrecta."
+        case "UserNotFoundException":        return "Usuario no encontrado."
+        case "UserNotConfirmedException":    return "Cuenta pendiente de confirmación."
+        case "PasswordResetRequiredException": return "Debes restablecer tu contraseña."
+        case "TooManyRequestsException", "LimitExceededException": return "Demasiados intentos. Espera un momento."
+        default: return err?.message ?? "Error de autenticación. Intenta de nuevo."
+        }
     }
 
     private func decodePayload(from jwt: String) -> [String: Any]? {
