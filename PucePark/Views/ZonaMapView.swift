@@ -27,71 +27,67 @@ struct ZonaMapView: View {
 
     var body: some View {
         ZStack {
-            // Campus map background
-            ZStack {
-                ParkTheme.Color.background.ignoresSafeArea()
-                Image("bg_mapa")
-                    .resizable()
-                    .scaledToFill()
-                    .ignoresSafeArea()
-                    .opacity(0.18)
-            }
-            Group {
-                if puestosVC.isLoading {
-                    ProgressView().tint(ParkTheme.Color.accentLight)
-                } else if let err = puestosVC.errorMsg, esAcceso(err), puestosVC.puestos.isEmpty {
-                    AccesoDenegadoView(
-                        titulo: "Sin Permiso",
-                        descripcion: err,
-                        accion: nil
-                    )
-                } else if let err = puestosVC.errorMsg, puestosVC.puestos.isEmpty {
-                    VStack(spacing: 12) {
-                        Text(err).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
-                        Button("Reintentar") { Task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) } }
-                            .foregroundStyle(ParkTheme.Color.accentLight)
-                    }.padding()
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            // Stats banner
-                            HStack(spacing: 0) {
-                                StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
-                                StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
-                                StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
-                            }
-                            .padding(.vertical, 14)
-                            .glassCard()
+            ParkTheme.Color.background.ignoresSafeArea()
+            Image("bg_mapa")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+                .opacity(0.18)
 
-                            // Grid per fila
-                            ForEach(puestosVC.filas, id: \.self) { fila in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Fila \(fila)")
-                                        .font(.caption).fontWeight(.semibold)
-                                        .foregroundStyle(.white.opacity(0.55))
-                                    ForEach(rows(for: fila), id: \.first!.id) { row in
-                                        HStack(spacing: 8) {
-                                            ForEach(row) { puesto in
-                                                PuestoCell(puesto: puesto)
-                                                    .onTapGesture { sheetPuesto = puesto }
-                                            }
-                                            if row.count == 1 { Color.clear.frame(height: 68) }
+            if puestosVC.isLoading {
+                ProgressView().tint(ParkTheme.Color.accentLight)
+            } else if let err = puestosVC.errorMsg, esAcceso(err), puestosVC.puestos.isEmpty {
+                AccesoDenegadoView(
+                    titulo: "Sin Permiso",
+                    descripcion: err,
+                    accion: nil
+                )
+            } else if let err = puestosVC.errorMsg, puestosVC.puestos.isEmpty {
+                VStack(spacing: 12) {
+                    Text(err).foregroundColor(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
+                    Button("Reintentar") { Task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) } }
+                        .foregroundColor(ParkTheme.Color.accentLight)
+                }.padding()
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Stats banner
+                        HStack(spacing: 0) {
+                            StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
+                            StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
+                            StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
+                        }
+                        .padding(.vertical, 14)
+                        .glassCard()
+
+                        // Grid per fila
+                        ForEach(puestosVC.filas, id: \.self) { fila in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Fila \(fila)")
+                                    .font(.caption).fontWeight(.semibold)
+                                    .foregroundColor(.white.opacity(0.7))
+                                ForEach(rows(for: fila), id: \.first!.id) { row in
+                                    HStack(spacing: 8) {
+                                        ForEach(row) { puesto in
+                                            PuestoCell(puesto: puesto)
+                                                .onTapGesture { sheetPuesto = puesto }
                                         }
+                                        if row.count == 1 { Color.clear.frame(height: 68) }
                                     }
                                 }
                             }
-
-                            // Legend
-                            HStack(spacing: 20) {
-                                LegendDot(color: ParkTheme.Color.disponible, label: "Disponible")
-                                LegendDot(color: ParkTheme.Color.ocupado,    label: "Ocupado")
-                            }
-                            .padding(.top, 4)
                         }
-                        .padding(16)
+
+                        // Legend
+                        HStack(spacing: 20) {
+                            LegendDot(color: ParkTheme.Color.disponible, label: "Disponible")
+                            LegendDot(color: ParkTheme.Color.ocupado,    label: "Ocupado")
+                        }
+                        .padding(.top, 4)
                     }
-                    .refreshable { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
+                    .padding(16)
                 }
+                .refreshable { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
             }
         }
         .navigationTitle(zona.name)
@@ -119,23 +115,30 @@ struct ZonaMapView: View {
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
     var body: some View {
+        let _ = print("⚡️ PuestoCell: \(puesto.spaceNumber) status=\(puesto.status)")
         let disp = puesto.status == .DISPONIBLE
-        return ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(disp ? Color.green.opacity(0.22) : Color.red.opacity(0.22))
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(disp ? Color.green.opacity(0.55) : Color.red.opacity(0.55), lineWidth: 1.5)
-            VStack(spacing: 3) {
-                Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.white.opacity(disp ? 0.7 : 0.5))
-                Text(puesto.spaceNumber)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color.white)
-            }
+        return VStack(spacing: 3) {
+            Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+            Text(puesto.spaceNumber)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 68)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(ParkTheme.Color.card)
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(disp ? Color.green.opacity(0.28) : Color.red.opacity(0.28))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(disp ? Color.green.opacity(0.55) : Color.red.opacity(0.55), lineWidth: 1.5)
+        )
     }
 }
 
@@ -245,8 +248,8 @@ private struct StatChip: View {
     let label: String; let value: Int; let color: Color
     var body: some View {
         VStack(spacing: 2) {
-            Text("\(value)").font(.title2).fontWeight(.bold).foregroundStyle(color)
-            Text(label).font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
+            Text("\(value)").font(.title2).fontWeight(.bold).foregroundColor(color)
+            Text(label).font(.caption2).foregroundColor(ParkTheme.Color.textSecond)
         }
         .frame(maxWidth: .infinity)
     }
