@@ -33,13 +33,13 @@ struct ZonaMapView: View {
             Group {
                 if puestosVC.isLoading {
                     ProgressView().tint(ParkTheme.Color.accentLight)
-                } else if let err = puestosVC.errorMsg, esAcceso(err) {
+                } else if let err = puestosVC.errorMsg, esAcceso(err), puestosVC.puestos.isEmpty {
                     AccesoDenegadoView(
                         titulo: "Sin Permiso",
                         descripcion: err,
                         accion: nil
                     )
-                } else if let err = puestosVC.errorMsg {
+                } else if let err = puestosVC.errorMsg, puestosVC.puestos.isEmpty {
                     VStack(spacing: 12) {
                         Text(err).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
                         Button("Reintentar") { Task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) } }
@@ -102,22 +102,23 @@ struct ZonaMapView: View {
 
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
-    private var isDisponible: Bool { puesto.status == .DISPONIBLE }
-    private var accent: Color { isDisponible ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado }
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10).fill(accent.opacity(0.15))
-            VStack(spacing: 5) {
-                Image(systemName: isDisponible ? "car" : "car.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(accent)
-                Text(puesto.spaceNumber)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-            RoundedRectangle(cornerRadius: 10).strokeBorder(accent.opacity(0.5), lineWidth: 1.5)
+        let ok = puesto.status == .DISPONIBLE
+        let tint: Color = ok ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado
+        return VStack(spacing: 5) {
+            Image(systemName: ok ? "car" : "car.fill")
+                .font(.system(size: 20))
+                .foregroundColor(tint)
+            Text(puesto.spaceNumber)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.white)
         }
+        .frame(maxWidth: .infinity)
         .frame(height: 68)
+        .background(tint.opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10)
+            .strokeBorder(tint.opacity(0.5), lineWidth: 1.5))
     }
 }
 
@@ -149,7 +150,22 @@ private struct PuestoSheet: View {
             }
 
             if let err = puestosVC.errorMsg {
-                Text(err).font(.caption).foregroundStyle(ParkTheme.Color.ocupado).multilineTextAlignment(.center).padding(.horizontal)
+                VStack(spacing: 6) {
+                    Label("¡Alto!", systemImage: "exclamationmark.triangle.fill")
+                        .font(.subheadline).fontWeight(.bold)
+                        .foregroundStyle(ParkTheme.Color.gold)
+                    Text(friendlyActionError(err))
+                        .font(.caption)
+                        .foregroundStyle(ParkTheme.Color.textPrimary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity)
+                .background(ParkTheme.Color.gold.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(ParkTheme.Color.gold.opacity(0.4), lineWidth: 1))
+                .padding(.horizontal)
             }
             if let ok = puestosVC.successMsg {
                 Text(ok).font(.caption).foregroundStyle(ParkTheme.Color.disponible)
@@ -210,6 +226,20 @@ private struct PuestoSheet: View {
             Spacer()
         }
     }
+}
+
+private func friendlyActionError(_ msg: String) -> String {
+    let low = msg.lowercased()
+    if low.contains("active space") || low.contains("active") && low.contains("release") {
+        return "Ya tienes un espacio ocupado. Libéralo antes de ocupar otro."
+    }
+    if low.contains("not found") || low.contains("no encontrado") {
+        return "El puesto ya no existe. Actualiza la lista."
+    }
+    if low.contains("already occupied") || low.contains("ya está ocupado") {
+        return "Este puesto ya está ocupado por otra persona."
+    }
+    return msg
 }
 
 private struct StatChip: View {
