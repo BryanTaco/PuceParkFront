@@ -8,10 +8,15 @@ struct ZonaMapView: View {
     @State private var sheetPuesto: PuestoParqueo?
     @State private var showAlto = false
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-
     private var disponibles: Int { puestosVC.puestos.filter { $0.status == .DISPONIBLE }.count }
     private var ocupados:    Int { puestosVC.puestos.filter { $0.status == .OCUPADO  }.count }
+
+    private func rows(for fila: String) -> [[PuestoParqueo]] {
+        let items = puestosVC.puestosEnFila(fila)
+        return stride(from: 0, to: items.count, by: 2).map {
+            Array(items[$0..<min($0 + 2, items.count)])
+        }
+    }
 
     private func esAcceso(_ msg: String) -> Bool {
         let low = msg.lowercased()
@@ -63,11 +68,14 @@ struct ZonaMapView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Fila \(fila)")
                                         .font(.caption).fontWeight(.semibold)
-                                        .foregroundStyle(ParkTheme.Color.textSecond)
-                                    LazyVGrid(columns: columns, spacing: 8) {
-                                        ForEach(puestosVC.puestosEnFila(fila)) { puesto in
-                                            PuestoCell(puesto: puesto)
-                                                .onTapGesture { sheetPuesto = puesto }
+                                        .foregroundStyle(.white.opacity(0.55))
+                                    ForEach(rows(for: fila), id: \.first!.id) { row in
+                                        HStack(spacing: 8) {
+                                            ForEach(row) { puesto in
+                                                PuestoCell(puesto: puesto)
+                                                    .onTapGesture { sheetPuesto = puesto }
+                                            }
+                                            if row.count == 1 { Color.clear.frame(height: 68) }
                                         }
                                     }
                                 }
@@ -111,19 +119,23 @@ struct ZonaMapView: View {
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
     var body: some View {
-        Text(puesto.spaceNumber)
-            .font(.system(size: 14, weight: .bold))
-            .foregroundStyle(puesto.status == .DISPONIBLE
-                ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado)
-            .frame(maxWidth: .infinity)
-            .frame(height: 68)
-            .background((puesto.status == .DISPONIBLE
-                ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado).opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10)
-                .strokeBorder((puesto.status == .DISPONIBLE
-                    ? ParkTheme.Color.disponible : ParkTheme.Color.ocupado).opacity(0.5),
-                    lineWidth: 1.5))
+        let disp = puesto.status == .DISPONIBLE
+        return ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(disp ? Color.green.opacity(0.22) : Color.red.opacity(0.22))
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(disp ? Color.green.opacity(0.55) : Color.red.opacity(0.55), lineWidth: 1.5)
+            VStack(spacing: 3) {
+                Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.white.opacity(disp ? 0.7 : 0.5))
+                Text(puesto.spaceNumber)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Color.white)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 68)
     }
 }
 
