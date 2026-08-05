@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct ZonasListView: View {
-    @StateObject private var zonasVC   = ZonasViewController()
-    @StateObject private var puestosVC = PuestosViewController()
+    @StateObject private var zonasVC = ZonasViewController()
 
     var totalDisponibles: Int { zonasVC.zonas.reduce(0) { $0 + $1.availableSpaces } }
     var totalOcupados:    Int { zonasVC.zonas.reduce(0) { $0 + $1.occupiedSpaces  } }
@@ -42,7 +41,6 @@ struct ZonasListView: View {
                                         NavigationLink(
                                             destination: ZonaMapView(
                                                 zona: zona,
-                                                puestosVC: puestosVC,
                                                 onEstadoCambiado: { Task { await zonasVC.loadZonas() } }
                                             )
                                         ) {

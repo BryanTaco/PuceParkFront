@@ -2,13 +2,12 @@ import SwiftUI
 
 struct ZonaMapView: View {
     let zona: ZonaParqueo
-    @ObservedObject var puestosVC: PuestosViewController
     var onEstadoCambiado: (() -> Void)? = nil
+    @StateObject private var puestosVC = PuestosViewController()
     @Environment(\.authSession) private var session
     @State private var sheetPuesto: PuestoParqueo?
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible()),
-                           GridItem(.flexible()), GridItem(.flexible())]
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     private var disponibles: Int { puestosVC.puestos.filter { $0.status == .DISPONIBLE }.count }
     private var ocupados:    Int { puestosVC.puestos.filter { $0.status == .OCUPADO  }.count }
