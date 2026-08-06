@@ -59,6 +59,12 @@ struct HistorialView: View {
         }
         .onReceive(ticker) { now = $0 }
         .task { await historialVC.loadHistorial() }
+        .onAppear {
+            // Recarga silenciosa al volver al tab — refleja parqueos hechos en otras pantallas
+            if historialVC.didLoadOnce {
+                Task { await historialVC.loadHistorial(silent: true) }
+            }
+        }
     }
 
     private var racha: Int {

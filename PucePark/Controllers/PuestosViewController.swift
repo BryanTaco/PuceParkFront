@@ -5,6 +5,7 @@ import Combine
 class PuestosViewController: ObservableObject {
     @Published var puestos: [PuestoParqueo] = []
     @Published var puestoSeleccionado: PuestoParqueo?
+    @Published var miPuestoId: Int?          // puesto ocupado por el usuario actual (amarillo)
     @Published var isLoading = false
     @Published var isActualizando = false
     @Published var errorMsg: String?
@@ -26,19 +27,19 @@ class PuestosViewController: ObservableObject {
     }
     func ocupar(puestoId: Int) async {
         isActualizando = true; errorMsg = nil; successMsg = nil
-        do { let u = try await ParkService.shared.ocuparPuesto(id: puestoId); patch(u); puestoSeleccionado = u; successMsg = "Puesto ocupado." }
+        do { let u = try await ParkService.shared.ocuparPuesto(id: puestoId); patch(u); puestoSeleccionado = u; miPuestoId = puestoId; successMsg = "Puesto ocupado." }
         catch { errorMsg = error.localizedDescription }
         isActualizando = false
     }
     func liberar(puestoId: Int) async {
         isActualizando = true; errorMsg = nil; successMsg = nil
-        do { let u = try await ParkService.shared.liberarPuesto(id: puestoId); patch(u); puestoSeleccionado = u; successMsg = "Puesto liberado." }
+        do { let u = try await ParkService.shared.liberarPuesto(id: puestoId); patch(u); puestoSeleccionado = u; if miPuestoId == puestoId { miPuestoId = nil }; successMsg = "Puesto liberado." }
         catch { errorMsg = error.localizedDescription }
         isActualizando = false
     }
     func forzarLiberacion(puestoId: Int) async {
         isActualizando = true; errorMsg = nil; successMsg = nil
-        do { let u = try await ParkService.shared.forzarLiberacion(id: puestoId); patch(u); puestoSeleccionado = u; successMsg = "Liberado por guardia." }
+        do { let u = try await ParkService.shared.forzarLiberacion(id: puestoId); patch(u); puestoSeleccionado = u; if miPuestoId == puestoId { miPuestoId = nil }; successMsg = "Liberado por guardia." }
         catch { errorMsg = error.localizedDescription }
         isActualizando = false
     }

@@ -3,20 +3,18 @@ import SwiftUI
 struct ZonaMapView: View {
     let zona: ZonaParqueo
     var onEstadoCambiado: (() -> Void)? = nil
+    var miPuestoId: Int? = nil
     @StateObject private var puestosVC = PuestosViewController()
     @Environment(\.authSession) private var session
+    @Environment(\.dismiss) private var dismiss
     @State private var sheetPuesto: PuestoParqueo?
     @State private var showAlto = false
 
+    private let columns = [GridItem(.flexible()), GridItem(.flexible()),
+                           GridItem(.flexible()), GridItem(.flexible())]
+
     private var disponibles: Int { puestosVC.puestos.filter { $0.status == .DISPONIBLE }.count }
     private var ocupados:    Int { puestosVC.puestos.filter { $0.status == .OCUPADO  }.count }
-
-    private func rows(for fila: String) -> [[PuestoParqueo]] {
-        let items = puestosVC.puestosEnFila(fila)
-        return stride(from: 0, to: items.count, by: 2).map {
-            Array(items[$0..<min($0 + 2, items.count)])
-        }
-    }
 
     private func esAcceso(_ msg: String) -> Bool {
         let low = msg.lowercased()
@@ -26,73 +24,138 @@ struct ZonaMapView: View {
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             ParkTheme.Color.background.ignoresSafeArea()
-            Image("bg_mapa")
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .opacity(0.18)
-
-            if puestosVC.isLoading {
-                ProgressView().tint(ParkTheme.Color.accentLight)
-            } else if let err = puestosVC.errorMsg, esAcceso(err), puestosVC.puestos.isEmpty {
-                AccesoDenegadoView(
-                    titulo: "Sin Permiso",
-                    descripcion: err,
-                    accion: nil
+            // Color.clear fija el ancho a la pantalla; la imagen llena por overlay
+            // y .clipped() recorta el sobrante — así scaledToFill NO estira el layout.
+            Color.clear
+                .overlay(
+                    Image("bg_mapa")
+                        .resizable()
+                        .scaledToFill()
+                        .opacity(0.18)
                 )
-            } else if let err = puestosVC.errorMsg, puestosVC.puestos.isEmpty {
-                VStack(spacing: 12) {
-                    Text(err).foregroundColor(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
-                    Button("Reintentar") { Task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) } }
-                        .foregroundColor(ParkTheme.Color.accentLight)
-                }.padding()
-            } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Stats banner
-                        HStack(spacing: 0) {
-                            StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
-                            StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
-                            StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
-                        }
-                        .padding(.vertical, 14)
-                        .glassCard()
+                .clipped()
+                .ignoresSafeArea()
 
-                        // Grid per fila
-                        ForEach(puestosVC.filas, id: \.self) { fila in
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Fila \(fila)")
-                                    .font(.caption).fontWeight(.semibold)
-                                    .foregroundColor(.white.opacity(0.7))
-                                ForEach(rows(for: fila), id: \.first!.id) { row in
-                                    HStack(spacing: 8) {
-                                        ForEach(row) { puesto in
-                                            PuestoCell(puesto: puesto)
-                                                .onTapGesture { sheetPuesto = puesto }
+            VStack(spacing: 0) {
+                // Custom header — sin glass iOS 26
+                ZStack {
+                    Color(hex: "#141E35")
+                    HStack {
+                        // onTapGesture en lugar de Button — Button aplica glass al label en iOS 26
+                        Text("‹ Zonas")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.leading, 16)
+                            .contentShape(Rectangle())
+                            .onTapGesture { dismiss() }
+                        Spacer()
+                        Text(zona.name)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Color.clear.frame(width: 60, height: 1)
+                    }
+                }
+                .frame(height: 52)
+                .padding(.top, 56)
+
+                if puestosVC.isLoading {
+                    Spacer()
+                    ProgressView().tint(ParkTheme.Color.accentLight)
+                    Spacer()
+                } else if let err = puestosVC.errorMsg, esAcceso(err), puestosVC.puestos.isEmpty {
+                    AccesoDenegadoView(titulo: "Sin Permiso", descripcion: err, accion: nil)
+                } else if let err = puestosVC.errorMsg, puestosVC.puestos.isEmpty {
+                    Spacer()
+                    VStack(spacing: 12) {
+                        Text(err).foregroundColor(ParkTheme.Color.ocupado).multilineTextAlignment(.center)
+                        Button("Reintentar") { Task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) } }
+                            .foregroundColor(ParkTheme.Color.accentLight)
+                    }.padding()
+                    Spacer()
+                } else {
+                    VStack(spacing: 0) {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                // Stats banner — solid background, foregroundStyle
+                                HStack(spacing: 0) {
+                                    StatChip(label: "Disponibles", value: disponibles, color: ParkTheme.Color.disponible)
+                                    Spacer()
+                                    StatChip(label: "Ocupados",    value: ocupados,    color: ParkTheme.Color.ocupado)
+                                    Spacer()
+                                    StatChip(label: "Total",       value: disponibles + ocupados, color: ParkTheme.Color.accentLight)
+                                }
+                                .padding(14)
+                                .background(ParkTheme.Color.card)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                                // Grid per fila — 4 columnas
+                                ForEach(puestosVC.filas, id: \.self) { fila in
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Fila \(fila)")
+                                            .font(.caption).fontWeight(.semibold)
+                                            .foregroundStyle(ParkTheme.Color.textSecond)
+                                        LazyVGrid(columns: columns, spacing: 8) {
+                                            ForEach(puestosVC.puestosEnFila(fila)) { puesto in
+                                                PuestoCell(puesto: puesto, miPuestoId: puestosVC.miPuestoId)
+                                                    .onTapGesture { sheetPuesto = puesto }
+                                            }
                                         }
-                                        if row.count == 1 { Color.clear.frame(height: 68) }
                                     }
                                 }
                             }
+                            .padding(16)
+                            .frame(maxWidth: .infinity)
                         }
+                        .refreshable { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
 
-                        // Legend
-                        HStack(spacing: 20) {
+                        // ── Leyenda fija — siempre visible, no hace falta scroll ──
+                        HStack(spacing: 0) {
                             LegendDot(color: ParkTheme.Color.disponible, label: "Disponible")
+                            Spacer()
+                            LegendDot(color: ParkTheme.Color.gold,       label: "Mi puesto")
+                            Spacer()
                             LegendDot(color: ParkTheme.Color.ocupado,    label: "Ocupado")
                         }
-                        .padding(.top, 4)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color(hex: "#141E35"))
                     }
-                    .padding(16)
                 }
-                .refreshable { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
             }
         }
-        .navigationTitle(zona.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await puestosVC.loadPuestosDeZona(zonaId: zona.id) }
+        .overlay(alignment: .topTrailing) {
+            // Botón "Liberar mi puesto" — arriba a la derecha, solo si tengo un puesto
+            if let mid = puestosVC.miPuestoId {
+                Group {
+                    if puestosVC.isActualizando {
+                        ProgressView().tint(Color(hex: "#0B1120")).scaleEffect(0.7)
+                            .frame(width: 56, height: 18)
+                    } else {
+                        Text("Liberar")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color(hex: "#0B1120"))
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(ParkTheme.Color.gold)
+                .clipShape(Capsule())
+                .contentShape(Capsule())
+                .onTapGesture {
+                    Task { await puestosVC.liberar(puestoId: mid); onEstadoCambiado?() }
+                }
+                .padding(.top, 60)
+                .padding(.trailing, 16)
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)   // elimina el glass nav bar de iOS 26
+        .task {
+            if puestosVC.miPuestoId == nil { puestosVC.miPuestoId = miPuestoId }
+            await puestosVC.loadPuestosDeZona(zonaId: zona.id)
+        }
         .sheet(item: $sheetPuesto) { p in
             PuestoSheet(
                 puesto: p,
@@ -112,56 +175,38 @@ struct ZonaMapView: View {
     }
 }
 
+
+// Estructura original: RoundedRectangle + .overlay() con .foregroundStyle()
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
+    var miPuestoId: Int? = nil
+
     var body: some View {
-        let disp = puesto.status == .DISPONIBLE
-        ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(red: 0.11, green: 0.165, blue: 0.29))
-            RoundedRectangle(cornerRadius: 10)
-                .fill(disp
-                      ? Color(red: 0.13, green: 0.77, blue: 0.37).opacity(0.32)
-                      : Color(red: 0.94, green: 0.27, blue: 0.27).opacity(0.32))
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(
-                    disp ? Color(red: 0.13, green: 0.77, blue: 0.37).opacity(0.6)
-                         : Color(red: 0.94, green: 0.27, blue: 0.27).opacity(0.6),
-                    lineWidth: 1.5)
-            // Pre-render into bitmap so glass vibrancy never touches the pixels
-            Image(uiImage: cellBitmap(
-                spaceNumber: puesto.spaceNumber,
-                iconName: disp ? "car.fill" : "xmark.circle.fill"
-            ))
-            .renderingMode(.original)
-            .resizable()
-            .scaledToFit()
-            .frame(height: 42)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 68)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
+        let disp  = puesto.status == .DISPONIBLE
+        let esMio = !disp && puesto.id == miPuestoId
+        let accent: Color = disp  ? ParkTheme.Color.disponible
+                          : esMio ? ParkTheme.Color.gold
+                          :         ParkTheme.Color.ocupado
+        let icon  = disp ? "car" : esMio ? "star.fill" : "car.fill"
 
-    private func cellBitmap(spaceNumber: String, iconName: String) -> UIImage {
-        let size = CGSize(width: 72, height: 42)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { _ in
-            let cfg = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
-            let icon = UIImage(systemName: iconName, withConfiguration: cfg)?
-                .withTintColor(.white, renderingMode: .alwaysOriginal)
-                ?? UIImage()
-            let iw = icon.size.width, ih = icon.size.height
-            icon.draw(at: CGPoint(x: (size.width - iw) / 2, y: 1))
-
-            let attrs: [NSAttributedString.Key: Any] = [
-                .foregroundColor: UIColor.white,
-                .font: UIFont.monospacedSystemFont(ofSize: 11, weight: .bold),
-            ]
-            let str = spaceNumber as NSString
-            let ts  = str.size(withAttributes: attrs)
-            str.draw(at: CGPoint(x: (size.width - ts.width) / 2, y: ih + 5),
-                     withAttributes: attrs)
+        VStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(accent.opacity(0.2))
+                .frame(height: 52)
+                .overlay(
+                    VStack(spacing: 2) {
+                        Image(systemName: icon)
+                            .font(.system(size: 16))
+                            .foregroundStyle(accent)
+                        Text(puesto.spaceNumber)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(accent)
+                    }
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(accent.opacity(0.4), lineWidth: 1)
+                )
         }
     }
 }
@@ -272,8 +317,8 @@ private struct StatChip: View {
     let label: String; let value: Int; let color: Color
     var body: some View {
         VStack(spacing: 2) {
-            Text("\(value)").font(.title2).fontWeight(.bold).foregroundColor(color)
-            Text(label).font(.caption2).foregroundColor(ParkTheme.Color.textSecond)
+            Text("\(value)").font(.title2).fontWeight(.bold).foregroundStyle(color)
+            Text(label).font(.caption2).foregroundStyle(.white.opacity(0.65))
         }
         .frame(maxWidth: .infinity)
     }
@@ -283,8 +328,12 @@ private struct LegendDot: View {
     let color: Color; let label: String
     var body: some View {
         HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 10, height: 10)
-            Text(label).font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color)
+                .frame(width: 12, height: 12)
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
         }
     }
 }

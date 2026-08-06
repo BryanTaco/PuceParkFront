@@ -79,6 +79,18 @@ private struct PerfilHero: View {
     }
     private var inicial: String { String(nombre.prefix(1)).uppercased() }
 
+    private var esGuardia: Bool { session?.isGuard == true || session?.isAdmin == true }
+    // SF Symbols no tiene gorra de guardia → uso figura con insignia de seguridad
+    private var avatarSymbol: String {
+        if esGuardia { return "person.badge.shield.checkmark.fill" }
+        return esFemenino ? "figure.stand.dress" : "figure.stand"
+    }
+    // Heurística de género por nombre (español: termina en "a" → femenino). Solo para el avatar.
+    private var esFemenino: Bool {
+        let primer = nombre.split(separator: " ").first.map(String.init)?.lowercased() ?? ""
+        return primer.hasSuffix("a")
+    }
+
     var body: some View {
         ZStack(alignment: .bottomLeading) {
 
@@ -127,13 +139,13 @@ private struct PerfilHero: View {
                     .opacity(appeared ? 1 : 0)
                     .animation(.easeOut(duration: 0.5).delay(0.1), value: appeared)
 
-                // Avatar circle
+                // Avatar circle — muñeco según rol/género
                 ZStack {
                     Circle()
-                        .fill(.white.opacity(0.12))
-                        .frame(width: 56, height: 56)
-                    Text(inicial)
-                        .font(.system(size: 22, weight: .bold))
+                        .fill(.white.opacity(0.14))
+                        .frame(width: 68, height: 68)
+                    Image(systemName: avatarSymbol)
+                        .font(.system(size: 34))
                         .foregroundStyle(.white)
                 }
                 .padding(.bottom, 12)
@@ -177,9 +189,9 @@ private struct PerfilInfoCard: View {
     let perfil: PerfilUsuario?
     let isGuard: Bool
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 18) {
             Text("Información personal")
-                .font(.subheadline).fontWeight(.semibold).foregroundStyle(ParkTheme.Color.textSecond)
+                .font(.headline).fontWeight(.semibold).foregroundStyle(ParkTheme.Color.textPrimary)
 
             InfoRow(icon: "person.fill", label: "Nombre", value: perfil?.fullName ?? "—")
 
@@ -190,24 +202,26 @@ private struct PerfilInfoCard: View {
                 InfoRow(icon: "doc.fill", label: "Permiso", value: perfil?.permitNumber ?? "—")
             }
         }
-        .padding(16).glassCard()
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
     }
 }
 
 private struct InfoRow: View {
     let icon: String; let label: String; let value: String
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.system(size: 18))
                 .foregroundStyle(ParkTheme.Color.accentLight)
-                .frame(width: 20)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(label).font(.caption2).foregroundStyle(ParkTheme.Color.textSecond)
-                Text(value).font(.system(size: 15, weight: .medium)).foregroundStyle(ParkTheme.Color.textPrimary)
+                .frame(width: 26)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).font(.caption).foregroundStyle(ParkTheme.Color.textSecond)
+                Text(value).font(.system(size: 19, weight: .semibold)).foregroundStyle(ParkTheme.Color.textPrimary)
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
 }
 
@@ -338,10 +352,12 @@ private struct LogoutButton: View {
     var body: some View {
         Button(role: .destructive, action: action) {
             Label("Cerrar sesión", systemImage: "rectangle.portrait.and.arrow.right")
-                .frame(maxWidth: .infinity).frame(height: 50)
+                .font(.system(size: 14, weight: .semibold))
+                .frame(maxWidth: .infinity).frame(height: 42)
         }
         .buttonStyle(.bordered)
         .tint(ParkTheme.Color.ocupado)
         .clipShape(RoundedRectangle(cornerRadius: ParkTheme.Radius.button))
+        .padding(.top, 4)
     }
 }

@@ -29,6 +29,6 @@ struct AuthSession: Sendable {
     var rolPrincipal: String {
         if isAdmin { return "Admin" }
         if isGuard { return "Guardia" }
-        return "Usuario"
+        return "Estudiante"
     }
 }

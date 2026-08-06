@@ -9,6 +9,7 @@ struct ZonasListView: View {
     var totalOcupados:    Int { zonasVC.zonas.reduce(0) { $0 + $1.occupiedSpaces  } }
 
     private var sesionActiva: HistorialParqueo? { historialVC.sesionesActivas.first }
+    @State private var zonaSeleccionada: ZonaParqueo?
 
     var body: some View {
         NavigationStack {
@@ -60,12 +61,7 @@ struct ZonasListView: View {
                                     )
                                 } else {
                                     ForEach(zonasVC.zonas) { zona in
-                                        NavigationLink(
-                                            destination: ZonaMapView(
-                                                zona: zona,
-                                                onEstadoCambiado: { Task { await zonasVC.loadZonas() } }
-                                            )
-                                        ) {
+                                        Button { zonaSeleccionada = zona } label: {
                                             ZonaCard(zona: zona)
                                         }
                                         .buttonStyle(.plain)
@@ -85,6 +81,22 @@ struct ZonasListView: View {
         .task {
             await zonasVC.loadZonas()
             await historialVC.loadHistorial()
+        }
+        .onAppear {
+            // Recarga silenciosa al volver al tab — refleja cambios hechos en otras pantallas
+            if zonasVC.didLoadOnce {
+                Task {
+                    await zonasVC.loadZonas(silent: true)
+                    await historialVC.loadHistorial(silent: true)
+                }
+            }
+        }
+        .fullScreenCover(item: $zonaSeleccionada) { zona in
+            ZonaMapView(
+                zona: zona,
+                onEstadoCambiado: { Task { await zonasVC.loadZonas(); await historialVC.loadHistorial() } },
+                miPuestoId: sesionActiva?.space.id
+            )
         }
     }
 }
