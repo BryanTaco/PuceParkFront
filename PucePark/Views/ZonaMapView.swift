@@ -128,18 +128,53 @@ private struct PuestoCell: View {
                     disp ? Color(red: 0.13, green: 0.77, blue: 0.37).opacity(0.6)
                          : Color(red: 0.94, green: 0.27, blue: 0.27).opacity(0.6),
                     lineWidth: 1.5)
-            VStack(spacing: 4) {
-                Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(red: 1, green: 1, blue: 1))
-                Text(puesto.spaceNumber)
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundColor(Color(red: 1, green: 1, blue: 1))
-            }
+            // UIKit label+icon bypass SwiftUI glass vibrancy pipeline
+            PuestoCellContent(
+                spaceNumber: puesto.spaceNumber,
+                iconName: disp ? "car.fill" : "xmark.circle.fill"
+            )
         }
         .frame(maxWidth: .infinity)
         .frame(height: 68)
-        .drawingGroup()
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+private struct PuestoCellContent: UIViewRepresentable {
+    let spaceNumber: String
+    let iconName: String
+
+    func makeUIView(context: Context) -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 4
+        stack.isUserInteractionEnabled = false
+
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFit
+        iv.tintColor = .white
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            iv.widthAnchor.constraint(equalToConstant: 22),
+            iv.heightAnchor.constraint(equalToConstant: 22),
+        ])
+
+        let lbl = UILabel()
+        lbl.textColor = .white
+        lbl.font = .monospacedSystemFont(ofSize: 12, weight: .bold)
+        lbl.textAlignment = .center
+
+        stack.addArrangedSubview(iv)
+        stack.addArrangedSubview(lbl)
+        return stack
+    }
+
+    func updateUIView(_ stack: UIStackView, context: Context) {
+        let cfg = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
+        (stack.arrangedSubviews[0] as? UIImageView)?.image =
+            UIImage(systemName: iconName, withConfiguration: cfg)
+        (stack.arrangedSubviews[1] as? UILabel)?.text = spaceNumber
     }
 }
 
