@@ -133,7 +133,7 @@ private struct PuestoCell: View {
                 spaceNumber: puesto.spaceNumber,
                 iconName: disp ? "car.fill" : "xmark.circle.fill"
             ))
-            .renderingMode(.alwaysOriginal)
+            .renderingMode(.original)
             .resizable()
             .scaledToFit()
             .frame(height: 42)
