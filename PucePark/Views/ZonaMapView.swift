@@ -115,30 +115,31 @@ struct ZonaMapView: View {
 private struct PuestoCell: View {
     let puesto: PuestoParqueo
     var body: some View {
-        let _ = print("⚡️ PuestoCell: \(puesto.spaceNumber) status=\(puesto.status)")
         let disp = puesto.status == .DISPONIBLE
-        return VStack(spacing: 3) {
-            Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
-                .font(.system(size: 16))
-                .foregroundColor(.white)
-            Text(puesto.spaceNumber)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white)
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(red: 0.11, green: 0.165, blue: 0.29))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(disp
+                      ? Color(red: 0.13, green: 0.77, blue: 0.37).opacity(0.32)
+                      : Color(red: 0.94, green: 0.27, blue: 0.27).opacity(0.32))
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(
+                    disp ? Color(red: 0.13, green: 0.77, blue: 0.37).opacity(0.6)
+                         : Color(red: 0.94, green: 0.27, blue: 0.27).opacity(0.6),
+                    lineWidth: 1.5)
+            VStack(spacing: 4) {
+                Image(systemName: disp ? "car.fill" : "xmark.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(red: 1, green: 1, blue: 1))
+                Text(puesto.spaceNumber)
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(red: 1, green: 1, blue: 1))
+            }
         }
         .frame(maxWidth: .infinity)
         .frame(height: 68)
-        .background(
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(ParkTheme.Color.card)
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(disp ? Color.green.opacity(0.28) : Color.red.opacity(0.28))
-            }
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(disp ? Color.green.opacity(0.55) : Color.red.opacity(0.55), lineWidth: 1.5)
-        )
+        .drawingGroup()
     }
 }
 
