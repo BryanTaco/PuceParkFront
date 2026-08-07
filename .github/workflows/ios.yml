@@ -1,0 +1,23 @@
+name: CI iOS
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    name: PucePark · build (iOS Simulator)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Seleccionar Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+      - name: Compilar (sin firma)
+        run: |
+          xcodebuild -project PucePark.xcodeproj \
+            -scheme PucePark \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            build CODE_SIGNING_ALLOWED=NO
