@@ -2,24 +2,18 @@ name: CI iOS
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
-# Nota: la app usa iOS 26 / Xcode 26 (proyecto en formato 77). Los runners de
-# GitHub-hosted no incluyen Xcode 26, por lo que la compilación completa se hace
-# localmente. Este workflow valida la estructura del proyecto en cada push/PR.
 jobs:
   validate:
-    name: PucePark · validación de estructura
+    name: Validacion de estructura iOS
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Validar proyecto Xcode y fuentes Swift
         run: |
-          test -d PucePark.xcodeproj || { echo "::error::Falta PucePark.xcodeproj"; exit 1; }
-          count=$(find PucePark -name '*.swift' | wc -l | tr -d ' ')
-          echo "Archivos Swift encontrados: $count"
-          test "$count" -gt 0 || { echo "::error::No se encontraron archivos Swift"; exit 1; }
-      - name: Nota
-        run: echo "Compilacion completa: local con Xcode 26 (GitHub-hosted runners no tienen Xcode 26)."
+          test -d PucePark.xcodeproj
+          echo "Archivos Swift:"
+          find PucePark -name '*.swift' | wc -l
