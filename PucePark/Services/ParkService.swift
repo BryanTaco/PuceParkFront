@@ -14,6 +14,7 @@ class ParkService {
     static let shared = ParkService()
     private init() {}
     private let base = AppConfig.apiBaseUrl
+    private let usersBase = AppConfig.usersBaseUrl   // microservicio de perfiles (/users)
 
     private var headers: HTTPHeaders {
         guard let t = AuthService.shared.savedToken else { return [] }
@@ -76,18 +77,19 @@ class ParkService {
                                  parameters: body, encoding: JSONEncoding.default)
     }
 
+    // ── Perfil: microservicio de usuarios (users-service vía nginx: /users/me) ──
     func getPerfil() async throws -> PerfilUsuario {
-        try await perform("\(base)/perfil/me")
+        try await perform("\(usersBase)/me")
     }
 
     func getPerfilEstado() async throws -> PerfilEstado {
-        try await perform("\(base)/perfil/me/estado")
+        try await perform("\(usersBase)/me/estado")
     }
 
     func updatePerfil(fullName: String, vehiclePlate: String, permitNumber: String, darkMode: Bool) async throws -> PerfilUsuario {
         let body: [String: Any] = ["fullName": fullName, "vehiclePlate": vehiclePlate,
                                     "permitNumber": permitNumber, "darkMode": darkMode]
-        return try await perform("\(base)/perfil/me", method: .put,
+        return try await perform("\(usersBase)/me", method: .put,
                                  parameters: body, encoding: JSONEncoding.default)
     }
 
