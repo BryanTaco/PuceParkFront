@@ -226,6 +226,7 @@ private struct InfoRow: View {
 }
 
 // ── FORM CARD (modo edición) ───────────────────────────────────────────────────
+// HU-13 (PUC-13): Editar mi perfil — formulario de edición con validación.
 private struct FormCard: View {
     @ObservedObject var perfilVC: PerfilViewController
     let isGuard: Bool
