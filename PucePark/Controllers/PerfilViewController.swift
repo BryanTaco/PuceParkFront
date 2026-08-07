@@ -51,6 +51,7 @@ class PerfilViewController: ObservableObject {
             async let e = ParkService.shared.getPerfilEstado()
             let (perfil, estado) = try await (p, e)
             self.perfil = perfil; self.estado = estado; fill(from: perfil)
+            AuthService.shared.saveFullName(perfil.fullName)   // para denormalizar en el ranking
         } catch { /* perfil no existe aún — normal en primer acceso */ }
         perfilCargado = true
         isLoading = false
@@ -66,6 +67,7 @@ class PerfilViewController: ObservableObject {
                 permitNumber: editPermiso.trimmingCharacters(in: .whitespacesAndNewlines),
                 darkMode:     false)
             perfil = u; estado = try await ParkService.shared.getPerfilEstado()
+            AuthService.shared.saveFullName(u.fullName)   // para denormalizar en el ranking
             successMsg = "Perfil actualizado"
         } catch { errorMsg = "No se pudo guardar el perfil." }
         isSaving = false

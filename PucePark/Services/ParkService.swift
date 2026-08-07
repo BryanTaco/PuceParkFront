@@ -60,7 +60,10 @@ class ParkService {
     }
 
     func ocuparPuesto(id: Int) async throws -> PuestoParqueo {
-        try await perform("\(base)/puestos/\(id)/ocupar", method: .put)
+        // Envía el nombre del perfil (users-service) para el ranking, sin joins entre servicios
+        let body: [String: Any] = ["fullName": AuthService.shared.savedFullName ?? ""]
+        return try await perform("\(base)/puestos/\(id)/ocupar", method: .put,
+                                 parameters: body, encoding: JSONEncoding.default)
     }
 
     func liberarPuesto(id: Int) async throws -> PuestoParqueo {
