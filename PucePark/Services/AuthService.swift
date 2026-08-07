@@ -17,11 +17,16 @@ class AuthService {
     private let tokenKey    = "pp_idToken"
     private let usernameKey = "pp_username"
     private let gruposKey   = "pp_grupos"
+    private let fullNameKey = "pp_fullName"
 
     var savedToken:    String?   { UserDefaults.standard.string(forKey: tokenKey) }
     var savedUsername: String?   { UserDefaults.standard.string(forKey: usernameKey) }
     var savedGrupos:   [String]  { UserDefaults.standard.stringArray(forKey: gruposKey) ?? [] }
     var isLoggedIn:    Bool      { savedToken != nil }
+
+    // Nombre del perfil (del users-service) — se envía al ocupar para el ranking
+    var savedFullName: String?   { UserDefaults.standard.string(forKey: fullNameKey) }
+    func saveFullName(_ name: String) { UserDefaults.standard.set(name, forKey: fullNameKey) }
 
     func login(username: String, password: String) async throws -> AuthSession {
         let body: [String: Any] = [
@@ -58,7 +63,7 @@ class AuthService {
     }
 
     func logout() {
-        [tokenKey, usernameKey, gruposKey].forEach { UserDefaults.standard.removeObject(forKey: $0) }
+        [tokenKey, usernameKey, gruposKey, fullNameKey].forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
     func currentSession() -> AuthSession? {

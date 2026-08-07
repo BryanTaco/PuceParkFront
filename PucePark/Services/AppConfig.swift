@@ -16,6 +16,11 @@ enum AppConfig {
         guard let v = config["API_BASE_URL"] as? String else { fatalError("API_BASE_URL no definida") }
         return v
     }
+    // Microservicio de usuarios (perfiles) — vía nginx: http://localhost/users
+    static var usersBaseUrl: String {
+        guard let v = config["USERS_BASE_URL"] as? String else { fatalError("USERS_BASE_URL no definida") }
+        return v
+    }
     static var cognitoRegion: String {
         guard let v = config["COGNITO_REGION"] as? String else { fatalError("COGNITO_REGION no definida") }
         return v

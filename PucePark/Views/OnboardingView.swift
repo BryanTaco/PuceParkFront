@@ -52,9 +52,9 @@ struct OnboardingView: View {
                 VStack(spacing: 10) {
                     // Nombre (siempre)
                     ValidatedField(
-                        placeholder: "Nombre completo",
+                        placeholder: "Nombre y apellido",
                         text: $perfilVC.editNombre,
-                        hint: "Mínimo 3 caracteres",
+                        hint: "Ingresa nombre y apellido (ej. Bryan Taco)",
                         isValid: perfilVC.nombreValido
                     )
 

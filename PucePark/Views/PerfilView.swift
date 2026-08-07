@@ -236,9 +236,9 @@ private struct FormCard: View {
                 .font(.subheadline).fontWeight(.semibold).foregroundStyle(ParkTheme.Color.textSecond)
 
             PerfilValidatedField(
-                label: "Nombre completo",
+                label: "Nombre y apellido",
                 text: $perfilVC.editNombre,
-                hint: "Mínimo 3 caracteres",
+                hint: "Ingresa nombre y apellido (ej. Bryan Taco)",
                 isValid: perfilVC.nombreValido
             )
 
