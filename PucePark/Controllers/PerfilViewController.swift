@@ -34,8 +34,11 @@ class PerfilViewController: ObservableObject {
         return clean.range(of: #"^\d{10}$"#, options: .regularExpression) != nil
     }
 
+    // Requiere nombre y apellido: al menos 2 palabras, cada una de 2+ letras
     var nombreValido: Bool {
-        editNombre.trimmingCharacters(in: .whitespacesAndNewlines).count >= 3
+        let palabras = editNombre.trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(separator: " ").filter { !$0.isEmpty }
+        return palabras.count >= 2 && palabras.allSatisfy { $0.count >= 2 }
     }
 
     var canSave: Bool {

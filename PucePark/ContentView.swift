@@ -21,9 +21,11 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .onChange(of: authVC.session?.username) { _, username in
             if username != nil {
+                selectedTab = 0   // siempre iniciar en Zonas al ingresar (no en el último tab)
                 perfilVC.isGuard = authVC.session?.isGuard ?? false
                 Task { await perfilVC.loadPerfil() }
             } else {
+                selectedTab = 0   // resetear al cerrar sesión (Cerrar sesión está en el tab Perfil)
                 perfilVC.estado = nil
                 perfilVC.perfilCargado = false
                 perfilVC.isGuard = false
@@ -40,9 +42,8 @@ struct ContentView: View {
 
 @MainActor
 private func shouldShowOnboarding(session: AuthSession?, perfilVC: PerfilViewController) -> Bool {
-    if session?.isGuard == true || session?.isAdmin == true {
-        return !perfilVC.nombreValido
-    }
+    // Usar el estado GUARDADO (no el texto en vivo) para todos los roles: así el
+    // onboarding solo se cierra tras guardar, no mientras el guardia escribe su nombre.
     return perfilVC.estado?.complete == false
 }
 
