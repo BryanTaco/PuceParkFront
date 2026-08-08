@@ -292,10 +292,24 @@ private struct PuestoSheet: View {
                                 else { onActualizado() }
                             }
                         }
-                    } else {
+                    } else if puesto.id == puestosVC.miPuestoId {
+                        // Solo el dueño puede liberar su propio puesto
                         PrimaryButton(title: "Liberar puesto", isLoading: puestosVC.isActualizando) {
                             Task { await puestosVC.liberar(puestoId: puesto.id); onActualizado() }
                         }
+                    } else {
+                        // Puesto ocupado por otro usuario → no permitido
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "hand.raised.fill")
+                                .foregroundStyle(ParkTheme.Color.gold)
+                            Text("Este puesto está ocupado por otro usuario. Solo su dueño o un guardia puede liberarlo.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(ParkTheme.Color.textSecond)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(ParkTheme.Color.gold.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                 }
 
