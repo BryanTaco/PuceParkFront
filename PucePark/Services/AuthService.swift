@@ -1,8 +1,17 @@
 import Foundation
 
 private struct CognitoResponse: Decodable, Sendable {
-    struct AuthResult: Decodable, Sendable { let IdToken: String; let AccessToken: String }
+    struct AuthResult: Decodable, Sendable {
+        let IdToken: String
+        let AccessToken: String
+        let RefreshToken: String?   // solo viene en el login inicial, no al refrescar
+    }
     let AuthenticationResult: AuthResult
+}
+
+extension Notification.Name {
+    /// Se emite cuando el token expiró y no se pudo refrescar → forzar re-login.
+    static let ppSessionExpired = Notification.Name("pp.sessionExpired")
 }
 
 struct CognitoError: LocalizedError {
@@ -18,11 +27,13 @@ class AuthService {
     private let usernameKey = "pp_username"
     private let gruposKey   = "pp_grupos"
     private let fullNameKey = "pp_fullName"
+    private let refreshKey  = "pp_refreshToken"
 
-    var savedToken:    String?   { UserDefaults.standard.string(forKey: tokenKey) }
-    var savedUsername: String?   { UserDefaults.standard.string(forKey: usernameKey) }
-    var savedGrupos:   [String]  { UserDefaults.standard.stringArray(forKey: gruposKey) ?? [] }
-    var isLoggedIn:    Bool      { savedToken != nil }
+    var savedToken:        String?   { UserDefaults.standard.string(forKey: tokenKey) }
+    var savedUsername:     String?   { UserDefaults.standard.string(forKey: usernameKey) }
+    var savedGrupos:       [String]  { UserDefaults.standard.stringArray(forKey: gruposKey) ?? [] }
+    var savedRefreshToken: String?   { UserDefaults.standard.string(forKey: refreshKey) }
+    var isLoggedIn:        Bool      { savedToken != nil }
 
     // Nombre del perfil (del users-service) — se envía al ocupar para el ranking
     var savedFullName: String?   { UserDefaults.standard.string(forKey: fullNameKey) }
@@ -59,11 +70,40 @@ class AuthService {
         UserDefaults.standard.set(idToken,  forKey: tokenKey)
         UserDefaults.standard.set(username, forKey: usernameKey)
         UserDefaults.standard.set(grupos,   forKey: gruposKey)
+        if let refresh = decoded.AuthenticationResult.RefreshToken {
+            UserDefaults.standard.set(refresh, forKey: refreshKey)
+        }
         return session
     }
 
+    /// Refresca el IdToken usando el refresh token de Cognito (REFRESH_TOKEN_AUTH).
+    /// Devuelve true si se renovó; false si no hay refresh token o falló.
+    func refreshSession() async -> Bool {
+        guard let refresh = savedRefreshToken else { return false }
+        let body: [String: Any] = [
+            "AuthFlow": "REFRESH_TOKEN_AUTH",
+            "ClientId": AppConfig.cognitoClientId,
+            "AuthParameters": ["REFRESH_TOKEN": refresh]
+        ]
+        var req = URLRequest(url: URL(string: AppConfig.cognitoEndpoint)!)
+        req.httpMethod = "POST"
+        req.setValue("application/x-amz-json-1.1", forHTTPHeaderField: "Content-Type")
+        req.setValue("AWSCognitoIdentityProviderService.InitiateAuth", forHTTPHeaderField: "X-Amz-Target")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            guard (resp as? HTTPURLResponse)?.statusCode == 200 else { return false }
+            let decoded = try JSONDecoder().decode(CognitoResponse.self, from: data)
+            let idToken = decoded.AuthenticationResult.IdToken
+            UserDefaults.standard.set(idToken, forKey: tokenKey)
+            UserDefaults.standard.set(decodeGroups(from: idToken), forKey: gruposKey)
+            return true
+        } catch { return false }
+    }
+
     func logout() {
-        [tokenKey, usernameKey, gruposKey, fullNameKey].forEach { UserDefaults.standard.removeObject(forKey: $0) }
+        [tokenKey, usernameKey, gruposKey, fullNameKey, refreshKey].forEach { UserDefaults.standard.removeObject(forKey: $0) }
     }
 
     func currentSession() -> AuthSession? {

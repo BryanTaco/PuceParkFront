@@ -171,6 +171,11 @@ private struct MainTabView: View {
             PerfilView(authVC: authVC, perfilVC: perfilVC)
                 .tabItem { Label("Perfil", systemImage: "person.fill") }
                 .tag(3)
+            if authVC.session?.isAdmin == true {
+                AdminView()
+                    .tabItem { Label("Admin", systemImage: "gearshape.fill") }
+                    .tag(4)
+            }
         }
         .tint(ParkTheme.Color.accentLight)
     }

@@ -7,7 +7,13 @@ class AuthViewController: ObservableObject {
     @Published var isLoading = false
     @Published var errorMsg: String?
 
-    init() { session = AuthService.shared.currentSession() }
+    init() {
+        session = AuthService.shared.currentSession()
+        // Si el token expira y no se puede refrescar, ParkService emite esta señal → volver al login.
+        NotificationCenter.default.addObserver(forName: .ppSessionExpired, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.session = nil }
+        }
+    }
 
     func login(username: String, password: String) async {
         guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !password.isEmpty else {
