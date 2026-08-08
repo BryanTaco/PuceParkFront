@@ -57,7 +57,9 @@ struct RankingRow: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
-                Text(String(format: "%.1f h", entry.totalHours))
+                Text(entry.totalHours < 1
+                     ? "\(Int((entry.totalHours * 60).rounded())) min"
+                     : String(format: "%.1f h", entry.totalHours))
                     .font(.subheadline).fontWeight(.semibold)
                     .foregroundStyle(ParkTheme.Color.textPrimary)
                 Text("\(entry.totalSessions) sesiones")
